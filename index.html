@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SKOOTY GO 🛴</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Cairo', sans-serif; }
+        body { background: #F5F5F7; height: 100vh; overflow: hidden; }
+        .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        
+        /* Splash Screen */
+        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #10B981, #059669); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.5s; }
+        .splash-icon { font-size: 90px; animation: bounce 1.2s infinite; }
+        .splash-title { font-size: 36px; font-weight: 800; color: white; margin-top: 15px; letter-spacing: 1px; }
+        .splash-subtitle { font-size: 15px; color: rgba(255,255,255,0.9); margin-top: 5px; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        
+        /* Auth Screen */
+        .login-screen { padding: 30px 24px; height: 100%; display: flex; flex-direction: column; justify-content: flex-start; }
+        .login-header { text-align: center; margin-bottom: 25px; margin-top: 20px; }
+        .login-logo { font-size: 60px; }
+        .login-title { font-size: 26px; font-weight: 700; color: #1F2937; margin-top: 5px; }
+        .login-subtitle { font-size: 14px; color: #6B7280; margin-top: 3px; }
+        .input-group { margin-bottom: 15px; }
+        .input-label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
+        .input-field { width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.3s; }
+        .input-field:focus { border-color: #10B981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+        .btn-primary { width: 100%; padding: 16px; background: #10B981; color: white; border: none; border-radius: 14px; font-size: 18px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+        .btn-primary:hover { background: #059669; }
+        
+        /* Map Screen */
+        .map-screen { height: 100%; position: relative; }
+        .map-header { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; background: white; padding: 12px 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .brand-name { font-size: 20px; font-weight: 800; color: #10B981; }
+        .wallet-badge { background: #ECFDF5; color: #059669; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 14px; }
+        #map { width: 100%; height: 72%; background: #E5E7EB; }
+        
+        /* Bottom Sheet */
+        .bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; height: 31%; background: white; border-radius: 24px 24px 0 0; padding: 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 1000; display: flex; flex-direction: column; }
+        .sheet-handle { width: 40px; height: 5px; background: #E5E7EB; border-radius: 10px; margin: 0 auto 15px; }
+        .sheet-title { font-size: 16px; font-weight: 700; color: #374151; margin-bottom: 10px; }
+        .scooter-list-container { overflow-y: auto; flex: 1; }
+        .scooter-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #F3F4F6; border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+        .scooter-item:hover { border-color: #10B981; background: #F9FAFB; }
+        .scooter-meta { display: flex; align-items: center; gap: 12px; }
+        .scooter-avatar { width: 45px; height: 45px; background: #E6F4EA; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .scooter-code { font-weight: 700; color: #111827; font-size: 15px; }
+        .scooter-specs { font-size: 12px; color: #6B7280; margin-top: 2px; }
+        .scooter-action-price { text-align: left; }
+        .price-text { font-weight: 700; color: #10B981; font-size: 16px; }
+        
+        /* Ride active view */
+        .ride-screen { height: 100%; background: #1F2937; color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; text-align: center; }
+        .ride-status-tag { background: rgba(16, 185, 129, 0.2); color: #34D399; padding: 6px 16px; border-radius: 20px; display: inline-block; margin: 0 auto; font-size: 14px; font-weight: 600; }
+        .timer-val { font-size: 64px; font-weight: 800; margin-top: 20px; font-variant-numeric: tabular-nums; color: white; }
+        .cost-val { font-size: 28px; color: #10B981; font-weight: 700; margin-top: 5px; }
+        .stats-row { display: flex; justify-content: space-around; margin: 40px 0; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px; }
+        .stat-box { text-align: center; }
+        .stat-num { font-size: 22px; font-weight: 700; color: #F9FAFB; }
+        .stat-lbl { font-size: 12px; color: #9CA3AF; margin-top: 4px; }
+        .btn-danger { width: 100%; padding: 18px; background: #EF4444; color: white; border: none; border-radius: 16px; font-size: 18px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Splash screen -->
+        <div class="splash" id="splash-screen">
+            <div class="splash-icon">🛴</div>
+            <div class="splash-title">SKOOTY GO</div>
+            <div class="splash-subtitle">منصة التأجير الذكي للميكرو-موبيليتي</div>
+        </div>
+
+        <!-- Registration & Login Screen -->
+        <div class="login-screen hidden" id="auth-screen" style="overflow-y: auto;">
+            <div class="login-header">
+                <div class="login-logo">🛴</div>
+                <div class="login-title">إنشاء حساب جديد</div>
+                <div class="login-subtitle">سجل بياناتك الرسمية لبدء استخدام SKOOTY GO</div>
+            </div>
+            
+            <div class="input-group" id="phone-box">
+                <label class="input-label">رقم المحمول</label>
+                <input type="tel" class="input-field" id="phone-input" placeholder="012XXXXXXXX" value="01234567890">
+            </div>
+
+            <div class="input-group hidden" id="otp-box">
+                <label class="input-label">رمز التحقق الافتراضي (OTP)</label>
+                <input type="text" class="input-field" id="otp-input" placeholder="123456" maxlength="6">
+            </div>
+
+            <!-- الحقول المطلوبة للمستخدم الجديد لأول مرة -->
+            <div id="new-user-fields">
+                <div class="input-group">
+                    <label class="input-label">الاسم بالكامل (طبقاً للبطاقة)</label>
+                    <input type="text" class="input-field" id="name-input" placeholder="اكتب اسمك الثلاثي أو الرباعي">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">البريد الإلكتروني (Gmail)</label>
+                    <input type="email" class="input-field" id="email-input" placeholder="name@gmail.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">الرقم القومي (14 رقماً)</label>
+                    <input type="text" class="input-field" id="national-id-input" placeholder="2990101XXXXXXXXX" maxlength="14">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">العنوان الحالي بالتفصيل</label>
+                    <input type="text" class="input-field" id="address-input" placeholder="المحافظة - المدينة - اسم الشارع">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">تصوير وجه بطاقة الرقم القومي 🪪</label>
+                    <input type="file" class="input-field" id="id-image-input" accept="image/*" capture="environment">
+                </div>
+            </div>
+
+            <button class="btn-primary" id="auth-btn" onclick="processAuthentication()">إرسال رمز التفعيل والبيانات</button>
+        </div>
+
+        <!-- Main Map Screen -->
+        <div class="map-screen hidden" id="main-map-screen">
+            <div class="map-header">
+                <div class="brand-name">SKOOTY GO</div>
+                <div class="wallet-badge" id="user-wallet-balance">💳 150.00 ج.م</div>
+            </div>
+            <div id="map"></div>
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="sheet-title">الإسكوترات المتاحة حولك في الإسكندرية</div>
+                <div class="scooter-list-container" id="vehicles-list"></div>
+            </div>
+        </div>
+
+        <!-- Active Ride Screen -->
+        <div class="ride-screen hidden" id="active-ride-screen">
+            <div>
+                <div class="ride-status-tag">الرحلة نشطة حالياً 🔓</div>
+                <div class="timer-val" id="live-timer">00:00</div>
+                <div class="cost-val" id="live-cost">0.00 ج.م</div>
+            </div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-num" id="ride-scooter-code">SKOTY-001</div>
+                    <div class="stat-lbl">رقم المركبة</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num">25 كم/س</div>
+                    <div class="stat-lbl">السرعة المحددة</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num">🔋 88%</div>
+                    <div class="stat-lbl">البطارية</div>
+                </div>
+            </div>
+            
+            <!-- نظام فتح الكاميرا المخفي لتأكيد القفل والسلامة -->
+            <input type="file" accept="image/*" capture="environment" id="camera-input" class="hidden" onchange="photoCaptured(this)">
+            <button class="btn-danger" id="end-ride-btn" onclick="openCameraForVerification()">تصوير الإسكوتر وإنهاء الرحلة 📸</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const BASE_API = window.location.origin + "/api";
+        let targetScooter = null;
+        let activeTimer = null;
+        let secondsElapsed = 0;
+        let trackingMap = null;
+        let selectedPhotoFile = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }, 2000);
+        });
+
+        async function processAuthentication() {
+            const pBox = document.getElementById('phone-box');
+            const oBox = document.getElementById('otp-box');
+            const btn = document.getElementById('auth-btn');
+            const phone = document.getElementById('phone-input').value;
+
+            if (!oBox.classList.contains('hidden')) {
+                const otp = document.getElementById('otp-input').value;
+                const fullName = document.getElementById('name-input').value;
+                const email = document.getElementById('email-input').value;
+                const nationalId = document.getElementById('national-id-input').value;
+                const address = document.getElementById('address-input').value;
+                const idImageFile = document.getElementById('id-image-input').files[0];
+
+                if (!fullName || !nationalId || nationalId.length !== 14 || !address || !idImageFile) {
+                    alert('برجاء استكمال كافة البيانات وتصوير بطاقة الرقم القومي (14 رقماً) بشكل صحيح.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('phone', phone);
+                formData.append('otp', otp);
+                formData.append('full_name', fullName);
+                formData.append('email', email);
+                formData.append('national_id', nationalId);
+                formData.append('address', address);
+                formData.append('id_image', idImageFile);
+
+                btn.innerText = "جاري التحقق من الهوية... ⏳";
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch(`${BASE_API}/auth/otp/verify`, { method: 'POST', body: formData });
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        document.getElementById('user-wallet-balance').innerText = `💳 ${data.user.wallet_balance.toFixed(2)} ج.م`;
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        document.getElementById('main-map-screen').classList.remove('hidden');
+                        initializeMapSystem();
+                        loadNearbyVehicles();
+                    } else {
+                        alert(data.error || 'فشلت عملية التسجيل.');
+                        btn.innerText = "تأكيد الدخول";
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('خطأ في الاتصال بالخادم.');
+                    btn.disabled = false;
+                }
+            } else {
+                await fetch(`${BASE_API}/auth/otp/send`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ phone })
+                });
+                pBox.classList.add('hidden');
+                oBox.classList.remove('hidden');
+                btn.innerText = "تأكيد الحساب والدخول 🚀";
+                alert("تم إرسال كود افتراضي للتجربة: 123456");
+            }
+        }
+
+        function initializeMapSystem() {
+            trackingMap = L.map('map', { zoomControl: false }).setView([31.2001, 29.9187], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(trackingMap);
+        }
+
+        async function loadNearbyVehicles() {
+            const response = await fetch(`${BASE_API}/scooters?lat=31.2001&lng=29.9187`);
+            const data = await response.json();
+            const container = document.getElementById('vehicles-list');
+            container.innerHTML = '';
+
+            data.scooters.forEach(scooter => {
+                L.marker([scooter.lat, scooter.lng]).addTo(trackingMap);
+
+                const row = document.createElement('div');
+                row.className = 'scooter-item';
+                row.onclick = () => launchRental(scooter.id, scooter.code);
+                row.innerHTML = `
+                    <div class="scooter-meta">
+                        <div class="scooter-avatar">🛴</div>
+                        <div>
+                            <div class="scooter-code">${scooter.code}</div>
+                            <div class="scooter-specs">🔋 ${scooter.battery}% • فتح القفل: ${scooter.base_price}ج • الدقيقة: ${scooter.minute_price}ج</div>
+                        </div>
+                    </div>
+                    <div class="price-text">${scooter.minute_price} ج.م</div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        async function launchRental(id, code) {
+            if (!confirm(`هل تريد فتح الإسكوتر ${code} لبدء الرحلة؟`)) return;
+            const response = await fetch(`${BASE_API}/scooters/${id}/unlock`, { method: 'POST' });
+            if (response.ok) {
+                targetScooter = id;
+                document.getElementById('ride-scooter-code').innerText = code;
+                document.getElementById('main-map-screen').classList.add('hidden');
+                document.getElementById('active-ride-screen').classList.remove('hidden');
+                
+                secondsElapsed = 0;
+                activeTimer = setInterval(() => {
+                    secondsElapsed++;
+                    let m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                    let s = (secondsElapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('live-timer').innerText = `${m}:${s}`;
+                    
+                    let liveCost = 5.0 + (Math.max(1, Math.floor(secondsElapsed / 60)) * 2.0);
+                    document.getElementById('live-cost').innerText = `${liveCost.toFixed(2)} ج.م`;
+                }, 1000);
+            }
+        }
+
+        function openCameraForVerification() {
+            document.getElementById('camera-input').click();
+        }
+
+        async function photoCaptured(input) {
+            if (input.files && input.files[0]) {
+                selectedPhotoFile = input.files[0];
+                document.getElementById('end-ride-btn').innerText = "جاري رفع الصورة وقفل الإسكوتر... ⏳";
+                document.getElementById('end-ride-btn').disabled = true;
+                await terminateRentalWithPhoto();
+            }
+        }
+
+        async function terminateRentalWithPhoto() {
+            const formData = new FormData();
+            formData.append('photo', selectedPhotoFile);
+            formData.append('latitude', 31.2001);
+            formData.append('longitude', 29.9187);
+
+            const response = await fetch(`${BASE_API}/scooters/${targetScooter}/lock`, { method: 'POST', body: formData });
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert(`تم التحقق من الصورة وقفل المركبة بنجاح.\nالمدة: ${data.fare.duration} دقيقة.\nالتكلفة الإجمالية: ${data.fare.total} ج.م`);
+                document.getElementById('end-ride-btn').innerText = "تصوير الإسكوتر وإنهاء الرحلة 📸";
+                document.getElementById('end-ride-btn').disabled = false;
+                document.getElementById('active-ride-screen').classList.add('hidden');
+                document.getElementById('main-map-screen').classList.remove('hidden');
+                loadNearbyVehicles();
+            } else {
+                alert(data.error);
+                document.getElementById('end-ride-btn').innerText = "تصوير الإسكوتر وإنهاء الرحلة 📸";
+                document.getElementById('end-ride-btn').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
