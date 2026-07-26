@@ -9,95 +9,74 @@
         body { background: #F5F5F7; height: 100vh; overflow: hidden; }
         .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
         
-        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #10B981, #059669); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.5s; color: white; font-size: 32px; font-weight: 800; }
-        .login-screen { padding: 30px 24px; height: 100%; display: flex; flex-direction: column; overflow-y: auto; }
-        .input-group { margin-bottom: 14px; }
-        .input-label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
-        .input-field { width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 14px; outline: none; }
-        .btn-primary { width: 100%; padding: 16px; background: #10B981; color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #10B981, #059669); display: flex; align-items: center; justify-content: center; z-index: 1000; color: white; font-size: 32px; font-weight: 800; }
+        .screen { padding: 24px; height: 100%; display: flex; flex-direction: column; overflow-y: auto; }
         
-        .map-screen { height: 100%; position: relative; display: flex; flex-direction: column; }
-        .map-header { background: white; padding: 16px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 5; }
+        .input-group { margin-bottom: 12px; }
+        .input-label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; display: block; }
+        .input-field { width: 100%; padding: 12px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 14px; outline: none; }
+        
+        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .btn-charge { background: #059669; padding: 6px 12px; border-radius: 8px; color: white; border: none; font-weight: bold; cursor: pointer; }
+        
+        .map-header { background: white; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .brand-name { font-size: 20px; font-weight: 800; color: #10B981; }
         
         #qr-scanner-container { width: 100%; flex: 1; background: #111827; position: relative; display: flex; flex-direction: column; justify-content: center; }
-        #reader { width: 100%; max-width: 350px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
-        .scanner-hint { text-align: center; color: #9CA3AF; font-size: 14px; padding: 15px; }
+        #reader { width: 100%; max-width: 320px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
 
-        .bottom-sheet { background: white; border-radius: 24px 24px 0 0; padding: 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); }
-        .scooter-item { padding: 14px; border: 1px solid #F3F4F6; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .scooter-title { font-weight: 700; color: #111827; }
-        
         .ride-screen { height: 100%; background: #1F2937; color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; text-align: center; }
-        .timer-val { font-size: 60px; font-weight: 800; }
-        .btn-danger { width: 100%; padding: 18px; background: #EF4444; color: white; border: none; border-radius: 16px; font-size: 18px; font-weight: 700; cursor: pointer; }
+        .timer-val { font-size: 54px; font-weight: 800; }
+        .cost-val { font-size: 28px; color: #10B981; font-weight: 700; margin-top: 8px; }
         
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Splash Screen -->
         <div class="splash" id="splash-screen">🛴 SKOOTY GO</div>
 
-        <!-- Auth & Identity Verification -->
-        <div class="login-screen hidden" id="auth-screen">
-            <h2 style="margin-bottom: 20px; color: #111827;">التسجيل أول مرة 🪪</h2>
-            <form id="auth-form" onsubmit="processAuthentication(event)">
-                <div class="input-group" id="phone-box">
-                    <label class="input-label">رقم المحمول</label>
-                    <input type="tel" class="input-field" id="phone-input" value="01234567890" required>
-                </div>
-                <div class="input-group hidden" id="otp-box">
-                    <label class="input-label">كود التحقق الافتراضي</label>
-                    <input type="text" class="input-field" id="otp-input" placeholder="123456" value="123456" maxlength="6">
-                </div>
-                <div id="new-user-fields">
-                    <div class="input-group"><label class="input-label">الاسم بالكامل (طبقاً للبطاقة)</label><input type="text" class="input-field" id="name-input" placeholder="محمود محمد" value="محمود زيتون"></div>
-                    <div class="input-group"><label class="input-label">البريد الإلكتروني (Gmail)</label><input type="email" class="input-field" id="email-input" placeholder="name@gmail.com" value="user@skootygo.com"></div>
-                    <div class="input-group"><label class="input-label">الرقم القومي (14 رقماً موثقاً)</label><input type="text" class="input-field" id="national-id-input" placeholder="299XXXXXXXXXXX" value="29901010000000" maxlength="14"></div>
-                    <div class="input-group"><label class="input-label">العنوان الحالي بالتفصيل</label><input type="text" class="input-field" id="address-input" value="الإسكندرية"></div>
-                    <div class="input-group"><label class="input-label">📸 تصوير وجه بطاقة الرقم القومي (وش)</label><input type="file" class="input-field" id="id-front-input" accept="image/*"></div>
-                    <div class="input-group"><label class="input-label">📸 تصوير ظهر بطاقة الرقم القومي (ظهر)</label><input type="file" class="input-field" id="id-back-input" accept="image/*"></div>
-                </div>
-                <button type="submit" class="btn-primary" id="auth-btn">تأكيد الهوية والحساب</button>
+        <!-- 1️⃣ شاشة التسجيل وتأكيد الهوية -->
+        <div class="screen hidden" id="auth-screen">
+            <h2 style="margin-bottom: 16px; color: #111827;">إنشاء الحساب وتوثيقه 🪪</h2>
+            <form onsubmit="processAuthentication(event)">
+                <div class="input-group"><label class="input-label">رقم المحمول</label><input type="tel" class="input-field" id="phone-input" value="01234567890" required></div>
+                <div class="input-group"><label class="input-label">الاسم بالكامل</label><input type="text" class="input-field" id="name-input" value="محمود زيتون" required></div>
+                <div class="input-group"><label class="input-label">البريد الإلكتروني</label><input type="email" class="input-field" id="email-input" value="user@skootygo.com" required></div>
+                <div class="input-group"><label class="input-label">الرقم القومي (14 رقم)</label><input type="text" class="input-field" id="national-id-input" value="29901010000000" maxlength="14" required></div>
+                <button type="submit" class="btn-primary" id="auth-btn">تأكيد البيانات والتفعيل</button>
             </form>
         </div>
 
-        <!-- Main Scanner Screen -->
-        <div class="map-screen hidden" id="main-map-screen">
+        <!-- 2️⃣ الشاشة الرئيسية وشحن المحفظة ومسح الـ QR -->
+        <div class="screen hidden" style="padding: 0;" id="main-map-screen">
             <div class="map-header">
                 <div class="brand-name">SKOOTY GO</div>
-                <div style="font-weight: 700; color: #059669;">محفظة: 150 ج.م</div>
+                <div>
+                    <span style="font-weight: 700; color: #059669;" id="wallet-balance-label">150.00 ج.م</span>
+                    <button class="btn-charge" onclick="chargeWalletPrompt()">+ شحن</button>
+                </div>
             </div>
             
             <div id="qr-scanner-container">
                 <div id="reader"></div>
-                <div class="scanner-hint">وجّه كاميرا الموبايل نحو ملصق الـ QR Code الموجود على مقود الإسكوتر لفتحه فوراً</div>
+                <p style="text-align: center; color: #9CA3AF; font-size: 13px; margin-top: 10px;">امسح كود الـ QR الموجود على الإسكوتر للركوب فوراً</p>
             </div>
 
-            <div class="bottom-sheet">
-                <div id="vehicles-list">
-                    <div class="scooter-item">
-                        <div>
-                            <div class="scooter-title">🛴 مركبات SKOOTY GO جاهزة</div>
-                            <small style="color: #6B7280;">امسح كود الإسكوتر لبدء الحركة</small>
-                        </div>
-                        <button class="btn-primary" style="width: auto; padding: 8px 16px;" onclick="bypassToRide()">دخول تجريبي 🚀</button>
-                    </div>
-                </div>
+            <div style="padding: 16px; background: white;">
+                <button class="btn-primary" onclick="startRideDemo()">بدء تجريب الرحلة مباشرة ⚡</button>
             </div>
         </div>
 
-        <!-- Ride Screen -->
+        <!-- 3️⃣ شاشة الرحلة الحية والعداد المباشر -->
         <div class="ride-screen hidden" id="active-ride-screen">
             <div>
-                <div style="background: rgba(16,185,129,0.2); color:#34D399; padding:6px; border-radius:20px; display:inline-block;">الرحلة جارية مع SKOOTY GO</div>
+                <div style="background: rgba(16,185,129,0.2); color:#34D399; padding:6px 16px; border-radius:20px; display:inline-block; font-size: 14px;">الرحلة نشطة الان 🛴</div>
                 <div class="timer-val" id="live-timer">00:00</div>
-                <div style="font-size:24px; color:#10B981;" id="live-cost">0.00 ج.م</div>
+                <div class="cost-val" id="live-cost">5.00 ج.م</div>
+                <small style="color: #9CA3AF;">(فتح القفل: 5 ج.م + 2.5 ج.م/دقيقة)</small>
             </div>
-            <input type="file" accept="image/*" capture="environment" id="camera-input" class="hidden" onchange="photoCaptured(this)">
-            <button class="btn-danger" id="end-ride-btn" onclick="openCameraForVerification()">تصوير الإسكوتر وقفل القفل 📸</button>
+            <button class="btn-primary" style="background: #EF4444;" onclick="lockAndEndRide()">تصوير وإنهاء الرحلة 📸</button>
         </div>
     </div>
 
@@ -106,53 +85,71 @@
         const BASE_API = window.location.origin + "/api";
         let activeTimer = null;
         let secondsElapsed = 0;
+        let currentRideId = null;
+        let walletBalance = 150.00;
 
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 document.getElementById('splash-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
-            }, 1200);
+            }, 1000);
         });
 
-        async function processAuthentication(event) {
-            if(event) event.preventDefault(); // منع إعادة تحميل الصفحة فوراً
-            
-            const btn = document.getElementById('auth-btn');
-            btn.innerText = "جاري التحقق والدخول... ⏳";
+        async function processAuthentication(e) {
+            e.preventDefault();
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-map-screen').classList.remove('hidden');
+            startQRScanner();
+        }
 
-            try {
-                const response = await fetch(`${BASE_API}/auth/otp/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phone: document.getElementById('phone-input').value,
-                        otp: "123456",
-                        full_name: document.getElementById('name-input').value,
-                        national_id: document.getElementById('national-id-input').value,
-                        address: document.getElementById('address-input').value
-                    })
-                });
-
-                const data = await response.json();
-                
-                // الانتقال فوراً للشاشة الرئيسية
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('main-map-screen').classList.remove('hidden');
-                startQRScanner();
-
-            } catch (err) {
-                console.log("تجاوز خطأ الاتصال والانتقال المباشر:", err);
-                // التجاوز الاحتياطي لضمان عمل التطبيق دائماً
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('main-map-screen').classList.remove('hidden');
-                startQRScanner();
+        function chargeWalletPrompt() {
+            let amount = prompt("أدخل المبلغ المراد شحنه لـ SKOOTY GO (ج.م):", "50");
+            if (amount && !isNaN(amount)) {
+                walletBalance += parseFloat(amount);
+                updateWalletUI();
+                alert(`تم شحن حسابك بـ ${amount} ج.م بنجاح!`);
             }
         }
 
-        function bypassToRide() {
+        function updateWalletUI() {
+            document.getElementById('wallet-balance-label').innerText = `${walletBalance.toFixed(2)} ج.م`;
+        }
+
+        async function startRideDemo() {
+            if (walletBalance < 10) {
+                alert("رصيدك الحالي غير كافٍ، يرجى شحن المحفظة أولاً (الحد الأدنى 10 ج.م).");
+                return;
+            }
+            
             document.getElementById('main-map-screen').classList.add('hidden');
             document.getElementById('active-ride-screen').classList.remove('hidden');
-            startTimer();
+            
+            secondsElapsed = 0;
+            activeTimer = setInterval(() => {
+                secondsElapsed++;
+                let mins = Math.floor(secondsElapsed / 60);
+                let secs = (secondsElapsed % 60).toString().padStart(2, '0');
+                document.getElementById('live-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs}`;
+                
+                // حساب الحساب: 5 ج.م فتح القفل + 2.5 ج.م لكل دقيقة
+                let currentCost = 5.0 + (mins * 2.5);
+                document.getElementById('live-cost').innerText = `${currentCost.toFixed(2)} ج.م`;
+            }, 1000);
+        }
+
+        async function lockAndEndRide() {
+            clearInterval(activeTimer);
+            let mins = Math.max(1, Math.floor(secondsElapsed / 60));
+            let totalCost = 5.0 + (mins * 2.5);
+            
+            walletBalance = Math.max(0, walletBalance - totalCost);
+            updateWalletUI();
+
+            alert(`تم إغلاق الإسكوتر بنجاح! 🔒\nمدة الرحلة: ${mins} دقيقة\nالتكلفة الإجمالية: ${totalCost.toFixed(2)} ج.م\nالرصيد المتبقي بمحفظتك: ${walletBalance.toFixed(2)} ج.م`);
+
+            document.getElementById('active-ride-screen').classList.add('hidden');
+            document.getElementById('main-map-screen').classList.remove('hidden');
+            startQRScanner();
         }
 
         function startQRScanner() {
@@ -161,33 +158,13 @@
                 html5QrcodeScanner.start(
                     { facingMode: "environment" },
                     { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (decodedText) => {
+                    () => {
                         html5QrcodeScanner.stop();
-                        bypassToRide();
+                        startRideDemo();
                     },
-                    (errorMessage) => {}
-                ).catch(err => console.log("Camera permission skipped"));
+                    () => {}
+                ).catch(() => {});
             } catch(e) {}
-        }
-
-        function startTimer() {
-            secondsElapsed = 0;
-            activeTimer = setInterval(() => {
-                secondsElapsed++;
-                document.getElementById('live-timer').innerText = `${Math.floor(secondsElapsed/60).toString().padStart(2,'0')}:${(secondsElapsed%60).toString().padStart(2,'0')}`;
-                document.getElementById('live-cost').innerText = `${(5.0 + (secondsElapsed/60)*2.0).toFixed(2)} ج.م`;
-            }, 1000);
-        }
-
-        function openCameraForVerification() { 
-            document.getElementById('camera-input').click(); 
-        }
-
-        function photoCaptured(input) {
-            clearInterval(activeTimer);
-            alert("تم إنهاء الرحلة بنجاح مع SKOOTY GO!");
-            document.getElementById('active-ride-screen').classList.add('hidden');
-            document.getElementById('main-map-screen').classList.remove('hidden');
         }
     </script>
 </body>
