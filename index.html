@@ -143,7 +143,7 @@
             updateWalletDisplay();
             setTimeout(() => { initMap(); }, 100);
             
-            // تحديث الرصيد أوتوماتيكياً كل 5 ثواني ليتزامن مع لوحة الإدارة
+            // تحديث الرصيد أوتوماتيكياً كل 5 ثواني
             setInterval(checkBalance, 5000);
         }
 
@@ -170,12 +170,12 @@
                 map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
                 
-                // أيقونة إسكوتر رسمية وواضحة جداً
+                // أيقونة إسكوتر واضحة ومباشرة تضمن عدم ظهور أي بيت افتراضي
                 let scooterIcon = L.icon({
-                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png',
-                    iconSize: [45, 45],
-                    iconAnchor: [22, 45],
-                    popupAnchor: [0, -40]
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 40],
+                    popupAnchor: [0, -35]
                 });
 
                 L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #101</b><br>متطابق ومتاح للركوب");
@@ -188,7 +188,7 @@
 
         async function submitTopup() {
             let amount = document.getElementById('topup-amount').value;
-            let method = document.getElementById('topup-method').value;
+            let method = document.getElementById('topup-method-select') ? document.getElementById('topup-method-select').value : document.getElementById('topup-method').value;
             if(!amount || amount <= 0) { alert('برجاء إدخال مبلغ صحيح'); return; }
 
             try {
