@@ -30,7 +30,7 @@ class User(db.Model):
 class TopupRequest(db.Model):
     __tablename__ = 'topup_request'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer)
     amount = db.Column(db.Float)
     method = db.Column(db.String(50))
     status = db.Column(db.String(20), default="pending")
@@ -87,7 +87,6 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# جلب رصيد المستخدم المحدث
 @app.route('/api/user/balance/<int:user_id>', methods=['GET'])
 def get_balance(user_id):
     user = User.query.get(user_id)
@@ -95,7 +94,6 @@ def get_balance(user_id):
         return jsonify({"balance": user.wallet_balance})
     return jsonify({"error": "المستخدم غير موجود"}), 404
 
-# طلب شحن المحفظة
 @app.route('/api/wallet/request_topup', methods=['POST'])
 def request_topup():
     try:
@@ -111,11 +109,15 @@ def request_topup():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# لوحة تحكم الإدارة الاحترافية (Admin Dashboard)
 @app.route('/admin')
 def admin_panel():
     try:
-        pending_topups = db.session.query(TopupRequest, User).join(User, TopupRequest.user_id == User.id).filter(TopupRequest.status == 'pending').all()
+        # استعلام مباشر وآمن لجلب الطلبات مع المستخدمين
+        pending_topups = db.session.query(TopupRequest, User).filter(
+            TopupRequest.user_id == User.id,
+            TopupRequest.status == 'pending'
+        ).all()
+        
         total_users = User.query.count()
         
         html = f"""
@@ -174,7 +176,7 @@ def admin_panel():
             for t, u in pending_topups:
                 html += f"""
                     <tr>
-                        #{t.id}
+                        <td>#{t.id}</td>
                         <td>{u.full_name}</td>
                         <td>{u.phone}</td>
                         <td style="color: #10B981; font-weight: bold;">{t.amount} ج.م</td>
@@ -202,15 +204,15 @@ def approve_topup():
             topup.status = 'approved'
             user = User.query.get(topup.user_id)
             if user:
-                user.wallet_balance += topup.amount
-            db.session.commit()
+                user.wallet_balance = float(user.wallet_balance) + float(topup.amount)
+                db.session.commit()
             return """
             <body style="background:#0F172A; color:white; font-family:Tahoma; text-align:center; padding-top:50px;">
                 <h2 style="color:#10B981;">تمت الموافقة بنجاح وإضافة الرصيد لحساب العميل! 🎉</h2>
-                <br><a href="/admin" style="background:#10B981; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">العودة للوحة التحكم</a>
+                <br><a href="/admin" style="background:#10B981; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">العودة لوحة التحكم</a>
             </body>
             """
-        return "الطلب غير موجود أو تم معالجته مسبقاً."
+        return "<body style='background:#0F172A; color:white; text-align:center; padding-top:50px;'><h2>الطلب غير موجود أو تم معالجته مسبقاً.</h2><br><a href='/admin' style='color:#10B981;'>العودة</a></body>"
     except Exception as e:
         return f"خطأ: {e}"
 
