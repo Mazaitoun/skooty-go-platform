@@ -12,15 +12,13 @@
         .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; overflow: hidden; }
         .hidden { display: none !important; }
         
-        /* Inputs & Buttons */
         .input-field { width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 15px; outline: none; margin-bottom: 12px; transition: border 0.3s; }
         .input-field:focus { border-color: #10B981; }
-        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.3s; }
-        .btn-primary:hover { background: #059669; }
+        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .btn-outline { background: white; color: #10B981; border: 2px solid #10B981; margin-top: 10px; }
         
-        /* Auth Tabs */
         .auth-tabs { display: flex; background: #F3F4F6; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
-        .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; cursor: pointer; color: #6B7280; transition: 0.3s; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; cursor: pointer; color: #6B7280; }
         .tab-btn.active { background: #10B981; color: white; }
 
         /* Map UI */
@@ -28,44 +26,58 @@
         .wallet-badge { background: white; padding: 10px 16px; font-weight: 700; color: #10B981; border-radius: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
         #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         .scan-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #111827; color: white; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: 800; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1000; cursor: pointer; }
+
+        /* Modal Overlay */
+        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: flex-end; }
+        .modal { background: white; width: 100%; padding: 24px; border-radius: 24px 24px 0 0; }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- شاشة تسجيل الدخول / إنشاء الحساب -->
+        <!-- شاشة تسجيل الدخول -->
         <div class="screen" id="auth-screen" style="padding: 40px 24px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
             <h1 style="color: #10B981; text-align: center; font-size: 45px; margin-bottom: 20px;">SKOOTY GO</h1>
-            
             <div class="auth-tabs">
                 <div class="tab-btn active" id="tab-login" onclick="switchTab('login')">تسجيل الدخول</div>
                 <div class="tab-btn" id="tab-register" onclick="switchTab('register')">حساب جديد</div>
             </div>
 
-            <!-- نموذج تسجيل الدخول -->
             <div id="form-login">
                 <input type="tel" id="login-phone" class="input-field" placeholder="رقم المحمول" maxlength="11">
                 <input type="password" id="login-pass" class="input-field" placeholder="كلمة المرور">
                 <button class="btn-primary" onclick="submitLogin()" id="btn-login">دخول 🚀</button>
             </div>
 
-            <!-- نموذج إنشاء حساب -->
             <div id="form-register" class="hidden">
                 <input type="text" id="reg-name" class="input-field" placeholder="الاسم بالكامل">
                 <input type="tel" id="reg-phone" class="input-field" placeholder="رقم المحمول" maxlength="11">
                 <input type="password" id="reg-pass" class="input-field" placeholder="كلمة المرور">
                 <button class="btn-primary" onclick="submitRegister()" id="btn-register">إنشاء الحساب ✅</button>
             </div>
-            
             <p id="auth-msg" style="text-align: center; margin-top: 15px; color: #EF4444; font-weight: 600;"></p>
         </div>
 
-        <!-- الشاشة الرئيسية (الخريطة) -->
+        <!-- الشاشة الرئيسية والخريطة -->
         <div class="screen hidden" id="main-screen">
             <div class="top-bar">
-                <div class="wallet-badge" onclick="alert('شحن المحفظة قريباً')">💳 <span id="wallet-txt">0.00 ج.م</span></div>
+                <div class="wallet-badge" onclick="openTopup()">💳 <span id="wallet-txt">0.00 ج.م</span></div>
             </div>
             <div id="map"></div>
-            <button class="scan-btn" onclick="alert('سكانر الإسكوتر')">📸 امسح للركوب</button>
+            <button class="scan-btn" onclick="alert('امسح كيو آر الإسكوتر للبدء')">📸 امسح للركوب</button>
+        </div>
+
+        <!-- نافذة شحن المحفظة -->
+        <div class="overlay hidden" id="topup-overlay">
+            <div class="modal">
+                <h3 style="margin-bottom: 15px; color: #111827;">شحن المحفظة 💰</h3>
+                <select id="topup-method" class="input-field">
+                    <option value="instapay">إنستاباي (InstaPay)</option>
+                    <option value="vodafone_cash">فودافون كاش</option>
+                </select>
+                <input type="number" id="topup-amount" class="input-field" placeholder="المبلغ المراد شحنه (ج.م)">
+                <button class="btn-primary" onclick="submitTopup()">إرسال طلب الشحن 🚀</button>
+                <button class="btn-primary btn-outline" onclick="document.getElementById('topup-overlay').classList.add('hidden')">إلغاء</button>
+            </div>
         </div>
     </div>
 
@@ -94,29 +106,18 @@
             let phone = document.getElementById('login-phone').value;
             let pass = document.getElementById('login-pass').value;
             let msg = document.getElementById('auth-msg');
-            let btn = document.getElementById('btn-login');
 
-            if (!phone || !pass) { msg.innerText = "برجاء إدخال رقم المحمول وكلمة المرور"; return; }
+            if (!phone || !pass) { msg.innerText = "برجاء إدخال البيانات كاملة"; return; }
 
-            btn.innerText = "جاري الدخول...";
             try {
                 let res = await fetch(API + '/auth/login', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ phone: phone, password: pass })
                 });
                 let data = await res.json();
-                
-                if (res.ok) {
-                    currentUser = data.user;
-                    enterApp();
-                } else {
-                    msg.innerText = data.error || "خطأ في تسجيل الدخول";
-                    btn.innerText = "دخول 🚀";
-                }
-            } catch (e) {
-                msg.innerText = "خطأ في الاتصال بالخادم";
-                btn.innerText = "دخول 🚀";
-            }
+                if (res.ok) { currentUser = data.user; enterApp(); }
+                else { msg.innerText = data.error; }
+            } catch (e) { msg.innerText = "خطأ في الاتصال بالخادم"; }
         }
 
         async function submitRegister() {
@@ -124,36 +125,24 @@
             let phone = document.getElementById('reg-phone').value;
             let pass = document.getElementById('reg-pass').value;
             let msg = document.getElementById('auth-msg');
-            let btn = document.getElementById('btn-register');
 
-            if (!name || !phone || !pass) { msg.innerText = "برجاء استكمال جميع البيانات"; return; }
+            if (!name || !phone || !pass) { msg.innerText = "برجاء إدخال البيانات كاملة"; return; }
 
-            btn.innerText = "جاري الإنشاء...";
             try {
                 let res = await fetch(API + '/auth/register', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ name: name, phone: phone, password: pass })
                 });
                 let data = await res.json();
-                
-                if (res.ok) {
-                    currentUser = data.user;
-                    enterApp();
-                } else {
-                    msg.innerText = data.error || "خطأ أثناء إنشاء الحساب";
-                    btn.innerText = "إنشاء الحساب ✅";
-                }
-            } catch (e) {
-                msg.innerText = "خطأ في الاتصال بالخادم";
-                btn.innerText = "إنشاء الحساب ✅";
-            }
+                if (res.ok) { currentUser = data.user; enterApp(); }
+                else { msg.innerText = data.error; }
+            } catch (e) { msg.innerText = "خطأ في الاتصال بالخادم"; }
         }
 
         function enterApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
-            document.getElementById('wallet-txt').innerText = currentUser.balance + ' ج.م';
-            
+            document.getElementById('wallet-txt').innerText = currentUser.balance.toFixed(2) + ' ج.م';
             setTimeout(() => { initMap(); }, 100);
         }
 
@@ -161,11 +150,39 @@
             if(!map) {
                 map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
-                let scooterIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png', iconSize: [45, 45], iconAnchor: [22, 45] });
-                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map);
-                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map);
+                
+                // أيقونة إسكوتر حقيقية ومميزة بدلاً من البيت
+                let scooterIcon = L.icon({
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png',
+                    iconSize: [45, 45],
+                    iconAnchor: [22, 45],
+                    popupAnchor: [0, -40]
+                });
+
+                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("إسكوتر #101 - متاح");
+                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("إسكوتر #102 - متاح");
             }
             map.invalidateSize();
+        }
+
+        function openTopup() { document.getElementById('topup-overlay').classList.remove('hidden'); }
+
+        async function submitTopup() {
+            let amount = document.getElementById('topup-amount').value;
+            let method = document.getElementById('topup-method').value;
+            if(!amount || amount <= 0) { alert('برجاء إدخال مبلغ صحيح'); return; }
+
+            try {
+                let res = await fetch(API + '/wallet/request_topup', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user_id: currentUser.id, amount: amount, method: method })
+                });
+                let data = await res.json();
+                alert(data.message || "تم إرسال الطلب");
+                document.getElementById('topup-overlay').classList.add('hidden');
+            } catch (e) {
+                alert("حدث خطأ أثناء إرسال الطلب");
+            }
         }
     </script>
 </body>
