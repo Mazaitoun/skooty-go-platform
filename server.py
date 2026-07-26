@@ -109,10 +109,10 @@ def request_topup():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# لوحة تحكم الإدارة الاحترافية مع زر موافقة مباشر وسريع
 @app.route('/admin')
 def admin_panel():
     try:
-        # استعلام مباشر وآمن لجلب الطلبات مع المستخدمين
         pending_topups = db.session.query(TopupRequest, User).filter(
             TopupRequest.user_id == User.id,
             TopupRequest.status == 'pending'
@@ -140,7 +140,7 @@ def admin_panel():
                 th, td {{ padding: 15px; text-align: center; border-bottom: 1px solid #334155; }}
                 th {{ background: #334155; color: #F8FAFC; }}
                 tr:hover {{ background: #262F40; }}
-                .btn-approve {{ background: #10B981; color: white; padding: 8px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; transition: 0.2s; }}
+                .btn-approve {{ background: #10B981; color: white; padding: 8px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; cursor: pointer; border: none; }}
                 .btn-approve:hover {{ background: #059669; }}
                 .empty {{ text-align: center; padding: 40px; color: #94A3B8; font-size: 18px; }}
             </style>
@@ -175,19 +175,36 @@ def admin_panel():
         else:
             for t, u in pending_topups:
                 html += f"""
-                    <tr>
+                    <tr id="row-{t.id}">
                         <td>#{t.id}</td>
                         <td>{u.full_name}</td>
                         <td>{u.phone}</td>
                         <td style="color: #10B981; font-weight: bold;">{t.amount} ج.م</td>
                         <td>{t.method}</td>
-                        <td><a href="/admin/approve?id={t.id}" class="btn-approve">موافقة وشحن الرصيد ⚡</a></td>
+                        <td><button onclick="approveTopup({t.id})" class="btn-approve">موافقة وشحن ⚡</button></td>
                     </tr>
                 """
         
         html += """
                 </table>
             </div>
+            <script>
+                async function approveTopup(id) {
+                    if(!confirm('هل أنت متأكد من الموافقة على شحن الرصيد؟')) return;
+                    try {
+                        let res = await fetch('/admin/approve?id=' + id);
+                        let data = await res.json();
+                        if(res.ok) {
+                            alert(data.message);
+                            document.getElementById('row-' + id).remove();
+                        } else {
+                            alert('حدث خطأ أثناء الموافقة');
+                        }
+                    } catch(e) {
+                        alert('خطأ في الاتصال بالخادم');
+                    }
+                }
+            </script>
         </body>
         </html>
         """
@@ -195,7 +212,7 @@ def admin_panel():
     except Exception as e:
         return f"خطأ في لوحة التحكم: {e}"
 
-@app.route('/admin/approve')
+@app.route('/admin/approve', methods=['GET'])
 def approve_topup():
     try:
         req_id = request.args.get('id')
@@ -206,15 +223,10 @@ def approve_topup():
             if user:
                 user.wallet_balance = float(user.wallet_balance) + float(topup.amount)
                 db.session.commit()
-            return """
-            <body style="background:#0F172A; color:white; font-family:Tahoma; text-align:center; padding-top:50px;">
-                <h2 style="color:#10B981;">تمت الموافقة بنجاح وإضافة الرصيد لحساب العميل! 🎉</h2>
-                <br><a href="/admin" style="background:#10B981; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">العودة لوحة التحكم</a>
-            </body>
-            """
-        return "<body style='background:#0F172A; color:white; text-align:center; padding-top:50px;'><h2>الطلب غير موجود أو تم معالجته مسبقاً.</h2><br><a href='/admin' style='color:#10B981;'>العودة</a></body>"
+                return jsonify({"message": "تمت الموافقة وإضافة الرصيد لحساب العميل بنجاح! 🎉"})
+        return jsonify({"error": "الطلب غير موجود أو تم معالجته مسبقاً."}), 400
     except Exception as e:
-        return f"خطأ: {e}"
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
