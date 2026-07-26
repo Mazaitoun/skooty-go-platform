@@ -98,3 +98,11 @@ def request_topup():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+class User(db.Model):
+    __tablename__ = 'users' # <--- السطر الجديد اللي تم إضافته
+    id = db.Column(db.Integer, primary_key=True)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    full_name = db.Column(db.String(100))
+    password_hash = db.Column(db.String(255), nullable=False)
+    wallet_balance = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
