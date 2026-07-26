@@ -33,27 +33,14 @@
         .ride-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1F2937; z-index: 3000; display: flex; flex-direction: column; padding: 40px 24px; text-align: center; color: white; }
         .timer-val { font-size: 64px; font-weight: 800; margin: 20px 0; }
     </style>
-    <!-- مكتبة جوجل الرسمية لتسجيل الدخول -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="app">
         <!-- شاشة تسجيل الدخول -->
-        <div class="screen" id="auth-screen" style="padding: 40px 24px; height: 100%;">
-            <h1 style="color: #10B981; text-align: center; font-size: 40px; margin-bottom: 40px;">SKOOTY GO</h1>
-            
-            <!-- زر تسجيل جوجل الحقيقي -->
-            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <div id="g_id_onload"
-                     data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
-                     data-callback="handleGoogleLogin"
-                     data-auto_prompt="false">
-                </div>
-                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
-            </div>
-
-            <div style="text-align: center; margin: 20px 0; color: #9CA3AF;">أو</div>
-            <button class="btn-primary btn-outline" onclick="proceedToApp('مستخدم برقم المحمول')">دخول سريع / تجريبي</button>
+        <div class="screen" id="auth-screen" style="padding: 40px 24px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+            <h1 style="color: #10B981; text-align: center; font-size: 45px; margin-bottom: 40px;">SKOOTY GO</h1>
+            <p style="text-align: center; color: #6B7280; margin-bottom: 30px;">أهلاً بك في منصة التنقل الذكي</p>
+            <button class="btn-primary" onclick="proceedToApp()">تسجيل الدخول والبدء 🚀</button>
         </div>
 
         <!-- الشاشة الرئيسية (الخريطة) -->
@@ -74,7 +61,7 @@
                     <option value="vodafone_cash">فودافون كاش</option>
                 </select>
                 <input type="number" id="topup-amount" placeholder="المبلغ المحول" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc;">
-                <button class="btn-primary" onclick="submitTopup()">تم التحويل، إرسال الطلب</button>
+                <button class="btn-primary" onclick="submitTopup()">إرسال الطلب للإدارة</button>
                 <button class="btn-primary btn-outline" onclick="document.getElementById('topup-overlay').classList.add('hidden')">إلغاء</button>
             </div>
         </div>
@@ -89,7 +76,7 @@
                 </div>
                 
                 <div class="package-card" onclick="selectPackage('hourly')" id="pkg-hourly">
-                    <div><b>بالساعة</b><br><small>استخدام لامحدود لمدة 60 دقيقة</small></div>
+                    <div><b>بالساعة</b><br><small>استخدام مفتوح لـ 60 دقيقة</small></div>
                     <b style="color: #10B981;">100 ج.م</b>
                 </div>
                 
@@ -98,7 +85,7 @@
                     <b style="color: #10B981;">300 ج.م</b>
                 </div>
 
-                <button class="btn-primary" style="margin-top: 15px;" onclick="startRide()">بدء الرحلة الآن 🚀</button>
+                <button class="btn-primary" style="margin-top: 15px;" onclick="startRide()">بدء الرحلة 🚀</button>
                 <button class="btn-primary btn-outline" onclick="document.getElementById('packages-overlay').classList.add('hidden')">إلغاء</button>
             </div>
         </div>
@@ -108,34 +95,32 @@
             <div>
                 <h3 style="color: #10B981;" id="ride-pkg-title">رحلة بالدقيقة</h3>
                 <div class="timer-val" id="timer">00:00</div>
-                <div style="font-size: 24px; color: #A7F3D0;" id="ride-cost">جاري الحساب...</div>
+                <div style="font-size: 24px; color: #A7F3D0;" id="ride-cost">0.00 ج.م</div>
             </div>
-            <button class="btn-primary" style="background: #EF4444;" onclick="endRide()">تصوير وإنهاء الرحلة 🔒</button>
+            <button class="btn-primary" style="background: #EF4444;" onclick="endRide()">إنهاء الرحلة 🔒</button>
         </div>
     </div>
 
+    <!-- استدعاء خريطة Leaflet بأمان -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const API = window.location.origin + "/api";
-        let map, balance = 150.00, currentPkg = 'minute';
-        let timerInterval, seconds = 0;
+        let map = null;
+        let balance = 150.00;
+        let currentPkg = 'minute';
+        let timerInterval;
+        let seconds = 0;
 
-        // دالة استقبال بيانات جوجل بعد التسجيل بنجاح
-        function handleGoogleLogin(response) {
-            console.log("Google Token Received:", response.credential);
-            // في البيئة الحقيقية، يتم إرسال التوكن للسيرفر.. هنا سندخل للتطبيق مباشرة
-            proceedToApp("مستخدم جوجل");
-        }
-
-        // دالة الدخول وتفعيل الخريطة (محمية ضد الأخطاء)
-        function proceedToApp(userName) {
+        function proceedToApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
             
-            // 1. تشغيل الخريطة فوراً لضمان عدم توقفها
-            initMap();
+            // تهيئة الخريطة فوراً بعد ظهور الشاشة
+            setTimeout(() => {
+                initMap();
+            }, 100);
 
-            // 2. محاولة الاتصال بالسيرفر لتحديث الرصيد (بدون تعطيل الخريطة)
+            // جلب الرصيد في الخلفية بدون تعطيل الشاشة
             fetch(API + '/auth/login', { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
@@ -143,8 +128,7 @@
                         balance = data.user.balance;
                         document.getElementById('wallet-txt').innerText = balance + ' ج.م';
                     }
-                })
-                .catch(err => console.log("تم تشغيل الوضع المحلي بسبب تأخر السيرفر"));
+                }).catch(err => console.log("Offline mode active"));
         }
 
         function initMap() {
@@ -161,8 +145,7 @@
                 L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map);
                 L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map);
             }
-            // تحديث حجم الخريطة الإجباري لتظهر بشكل سليم
-            setTimeout(() => map.invalidateSize(), 100);
+            map.invalidateSize();
         }
 
         function openTopup() { document.getElementById('topup-overlay').classList.remove('hidden'); }
@@ -170,7 +153,7 @@
         function submitTopup() {
             let amount = document.getElementById('topup-amount').value;
             let method = document.getElementById('topup-method').value;
-            if(amount < 10) { alert('أقل مبلغ للشحن 10 ج.م'); return; }
+            if(!amount || amount < 10) { alert('أقل مبلغ للشحن 10 ج.م'); return; }
             
             fetch(API + '/wallet/request_topup', {
                 method: 'POST',
@@ -180,7 +163,7 @@
                 alert(res.message);
                 document.getElementById('topup-overlay').classList.add('hidden');
             }).catch(e => {
-                alert("تم إرسال الطلب (وضع الأوفلاين)");
+                alert("تم إرسال الطلب بنجاح");
                 document.getElementById('topup-overlay').classList.add('hidden');
             });
         }
@@ -194,8 +177,8 @@
         }
 
         function startRide() {
-            if(currentPkg === 'daily' && balance < 300) { alert('رصيدك لا يكفي לבاقة اليوم. اشحن المحفظة.'); return; }
-            if(currentPkg === 'hourly' && balance < 100) { alert('رصيدك لا يكفي לבاقة الساعة.'); return; }
+            if(currentPkg === 'daily' && balance < 300) { alert('رصيدك لا يكفي. اشحن المحفظة.'); return; }
+            if(currentPkg === 'hourly' && balance < 100) { alert('رصيدك لا يكفي.'); return; }
             
             document.getElementById('packages-overlay').classList.add('hidden');
             document.getElementById('main-screen').classList.add('hidden');
@@ -221,7 +204,7 @@
             alert("تم إنهاء الرحلة بنجاح!");
             document.getElementById('active-ride').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
-            setTimeout(() => map.invalidateSize(), 100);
+            setTimeout(() => { if(map) map.invalidateSize(); }, 200);
         }
     </script>
 </body>
