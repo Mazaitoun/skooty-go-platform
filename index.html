@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SKOOTY GO 🛴</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- مكتبة تشغيل الكاميرا وقارئ الـ QR -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
@@ -27,7 +29,7 @@
         .scan-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #111827; color: white; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: 800; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1000; cursor: pointer; }
 
         .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: flex-end; }
-        .modal { background: white; width: 100%; padding: 24px; border-radius: 24px 24px 0 0; }
+        .modal { background: white; width: 100%; padding: 24px; border-radius: 24px 24px 0 0; max-height: 85vh; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -61,7 +63,16 @@
                 <div class="wallet-badge" onclick="openTopup()">💳 <span id="wallet-txt">0.00 ج.م</span></div>
             </div>
             <div id="map"></div>
-            <button class="scan-btn" onclick="alert('امسح كيو آر الإسكوتر للبدء')">📸 امسح للركوب</button>
+            <button class="scan-btn" onclick="startQRScanner()">📸 امسح للركوب</button>
+        </div>
+
+        <!-- نافذة مسح الـ QR والكاميرا الحقيقية -->
+        <div class="overlay hidden" id="qr-overlay">
+            <div class="modal" style="text-align: center;">
+                <h3 style="margin-bottom: 15px; color: #111827;">وجه الكاميرا نحو كود الإسكوتر 📷</h3>
+                <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden;"></div>
+                <button class="btn-primary btn-outline" onclick="stopQRScanner()" style="margin-top: 15px;">إغلاق الكاميرا</button>
+            </div>
         </div>
 
         <!-- شحن المحفظة -->
@@ -84,6 +95,7 @@
         const API = window.location.origin + "/api";
         let map = null;
         let currentUser = null;
+        let html5QrCode = null;
 
         function switchTab(tab) {
             document.getElementById('auth-msg').innerText = '';
@@ -170,7 +182,6 @@
                 map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
                 
-                // أيقونة إسكوتر واضحة ومباشرة تضمن عدم ظهور أي بيت افتراضي
                 let scooterIcon = L.icon({
                     iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
                     iconSize: [40, 40],
@@ -178,17 +189,54 @@
                     popupAnchor: [0, -35]
                 });
 
-                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #101</b><br>متطابق ومتاح للركوب");
-                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #102</b><br>متطابق ومتاح للركوب");
+                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #101</b><br>متاح للركوب");
+                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #102</b><br>متاح للركوب");
             }
             map.invalidateSize();
+        }
+
+        // تشغيل الكاميرا وقارئ الـ QR والتحقق من الرصيد
+        function startQRScanner() {
+            // التحقق من الرصيد أولاً (الحد الأدنى للركوب مثلاً 10 جنيه)
+            if (currentUser.balance < 10) {
+                alert('عذراً، رصيدك الحالي لا يكفي لبدء الرحلة (الحد الأدنى 10 ج.م). برجاء شحن المحفظة أولاً! 💳');
+                openTopup();
+                return;
+            }
+
+            document.getElementById('qr-overlay').classList.remove('hidden');
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText, decodedResult) => {
+                    stopQRScanner();
+                    alert("تم التعرف على الإسكوتر بنجاح: " + decodedText + "\nجاري فتح القفل...");
+                },
+                (errorMessage) => { /* خطأ في المسح التجريبي يتم تجاهله حتى تلتقط الكاميرا الكود */ }
+            ).catch((err) => {
+                alert("تعذر تشغيل الكاميرا. تأكد من إعطاء الصلاحية للمتصفح.");
+                stopQRScanner();
+            });
+        }
+
+        function stopQRScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qr-overlay').classList.add('hidden');
+                }).catch(err => {
+                    document.getElementById('qr-overlay').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('qr-overlay').classList.add('hidden');
+            }
         }
 
         function openTopup() { document.getElementById('topup-overlay').classList.remove('hidden'); }
 
         async function submitTopup() {
             let amount = document.getElementById('topup-amount').value;
-            let method = document.getElementById('topup-method-select') ? document.getElementById('topup-method-select').value : document.getElementById('topup-method').value;
+            let method = document.getElementById('topup-method').value;
             if(!amount || amount <= 0) { alert('برجاء إدخال مبلغ صحيح'); return; }
 
             try {
