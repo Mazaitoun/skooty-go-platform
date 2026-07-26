@@ -21,20 +21,18 @@
         .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; cursor: pointer; color: #6B7280; }
         .tab-btn.active { background: #10B981; color: white; }
 
-        /* Map UI */
         .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; justify-content: space-between; }
         .wallet-badge { background: white; padding: 10px 16px; font-weight: 700; color: #10B981; border-radius: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
         #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         .scan-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #111827; color: white; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: 800; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1000; cursor: pointer; }
 
-        /* Modal Overlay */
         .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: flex-end; }
         .modal { background: white; width: 100%; padding: 24px; border-radius: 24px 24px 0 0; }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- شاشة تسجيل الدخول -->
+        <!-- شاشة الدخول -->
         <div class="screen" id="auth-screen" style="padding: 40px 24px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
             <h1 style="color: #10B981; text-align: center; font-size: 45px; margin-bottom: 20px;">SKOOTY GO</h1>
             <div class="auth-tabs">
@@ -57,7 +55,7 @@
             <p id="auth-msg" style="text-align: center; margin-top: 15px; color: #EF4444; font-weight: 600;"></p>
         </div>
 
-        <!-- الشاشة الرئيسية والخريطة -->
+        <!-- الشاشة الرئيسية -->
         <div class="screen hidden" id="main-screen">
             <div class="top-bar">
                 <div class="wallet-badge" onclick="openTopup()">💳 <span id="wallet-txt">0.00 ج.م</span></div>
@@ -66,13 +64,13 @@
             <button class="scan-btn" onclick="alert('امسح كيو آر الإسكوتر للبدء')">📸 امسح للركوب</button>
         </div>
 
-        <!-- نافذة شحن المحفظة -->
+        <!-- شحن المحفظة -->
         <div class="overlay hidden" id="topup-overlay">
             <div class="modal">
                 <h3 style="margin-bottom: 15px; color: #111827;">شحن المحفظة 💰</h3>
                 <select id="topup-method" class="input-field">
-                    <option value="instapay">إنستاباي (InstaPay)</option>
-                    <option value="vodafone_cash">فودافون كاش</option>
+                    <option value="إنستاباي">إنستاباي (InstaPay)</option>
+                    <option value="فودافون كاش">فودافون كاش</option>
                 </select>
                 <input type="number" id="topup-amount" class="input-field" placeholder="المبلغ المراد شحنه (ج.م)">
                 <button class="btn-primary" onclick="submitTopup()">إرسال طلب الشحن 🚀</button>
@@ -142,8 +140,29 @@
         function enterApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
-            document.getElementById('wallet-txt').innerText = currentUser.balance.toFixed(2) + ' ج.م';
+            updateWalletDisplay();
             setTimeout(() => { initMap(); }, 100);
+            
+            // تحديث الرصيد أوتوماتيكياً كل 5 ثواني ليتزامن مع لوحة الإدارة
+            setInterval(checkBalance, 5000);
+        }
+
+        function updateWalletDisplay() {
+            if(currentUser) {
+                document.getElementById('wallet-txt').innerText = currentUser.balance.toFixed(2) + ' ج.م';
+            }
+        }
+
+        async function checkBalance() {
+            if(!currentUser) return;
+            try {
+                let res = await fetch(API + '/user/balance/' + currentUser.id);
+                let data = await res.json();
+                if(res.ok) {
+                    currentUser.balance = data.balance;
+                    updateWalletDisplay();
+                }
+            } catch(e) {}
         }
 
         function initMap() {
@@ -151,7 +170,7 @@
                 map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
                 
-                // أيقونة إسكوتر حقيقية ومميزة بدلاً من البيت
+                // أيقونة إسكوتر رسمية وواضحة جداً
                 let scooterIcon = L.icon({
                     iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png',
                     iconSize: [45, 45],
@@ -159,8 +178,8 @@
                     popupAnchor: [0, -40]
                 });
 
-                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("إسكوتر #101 - متاح");
-                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("إسكوتر #102 - متاح");
+                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #101</b><br>متطابق ومتاح للركوب");
+                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("<b>إسكوتر #102</b><br>متطابق ومتاح للركوب");
             }
             map.invalidateSize();
         }
@@ -180,6 +199,7 @@
                 let data = await res.json();
                 alert(data.message || "تم إرسال الطلب");
                 document.getElementById('topup-overlay').classList.add('hidden');
+                document.getElementById('topup-amount').value = '';
             } catch (e) {
                 alert("حدث خطأ أثناء إرسال الطلب");
             }
