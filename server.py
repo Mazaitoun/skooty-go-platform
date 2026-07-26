@@ -78,7 +78,7 @@ def register():
         })
     except Exception as e:
         print("Register Error:", e)
-        return jsonify({"error": "حدث خطأ في السيرفر أثناء الإنشاء"}), 500
+        return jsonify({"error": f"الخطأ: {str(e)}"}), 500
 
 # تسجيل الدخول
 @app.route('/api/auth/login', methods=['POST'])
