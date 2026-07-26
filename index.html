@@ -4,167 +4,266 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SKOOTY GO 🛴</title>
+    <!-- استدعاء خريطة Leaflet المجانية -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Cairo', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { background: #F5F5F7; height: 100vh; overflow: hidden; }
-        .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        
-        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #10B981, #059669); display: flex; align-items: center; justify-content: center; z-index: 1000; color: white; font-size: 32px; font-weight: 800; }
-        .screen { padding: 24px; height: 100%; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        .input-group { margin-bottom: 12px; }
-        .input-label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; display: block; }
-        .input-field { width: 100%; padding: 12px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 14px; outline: none; }
-        
-        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
-        .btn-charge { background: #059669; padding: 6px 12px; border-radius: 8px; color: white; border: none; font-weight: bold; cursor: pointer; }
-        
-        .map-header { background: white; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .brand-name { font-size: 20px; font-weight: 800; color: #10B981; }
-        
-        #qr-scanner-container { width: 100%; flex: 1; background: #111827; position: relative; display: flex; flex-direction: column; justify-content: center; }
-        #reader { width: 100%; max-width: 320px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
-
-        .ride-screen { height: 100%; background: #1F2937; color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; text-align: center; }
-        .timer-val { font-size: 54px; font-weight: 800; }
-        .cost-val { font-size: 28px; color: #10B981; font-weight: 700; margin-top: 8px; }
+        .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; }
         
         .hidden { display: none !important; }
+        
+        /* Splash Screen */
+        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #10B981; display: flex; align-items: center; justify-content: center; z-index: 9999; color: white; font-size: 36px; font-weight: 800; }
+        
+        /* General UI Elements */
+        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .btn-danger { background: #EF4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        .input-field { width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 14px; outline: none; margin-bottom: 12px; transition: 0.3s; }
+        .input-field:focus { border-color: #10B981; }
+
+        /* Sidebar Menu */
+        .menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
+        .sidebar { position: fixed; top: 0; right: -300px; width: 280px; height: 100%; background: white; z-index: 2001; transition: 0.3s ease-in-out; padding: 24px; display: flex; flex-direction: column; }
+        .sidebar.open { right: 0; }
+        .sidebar-header { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .menu-item { padding: 16px 0; font-size: 18px; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6; cursor: pointer; }
+        .menu-item:hover { color: #10B981; }
+
+        /* Map Screen */
+        .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
+        .menu-btn, .wallet-btn { background: white; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 20px; cursor: pointer; border: none; }
+        .wallet-btn { width: auto; padding: 0 16px; font-weight: 700; color: #10B981; border-radius: 25px; }
+        #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* Floating QR Button */
+        .scan-btn-container { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; z-index: 1000; }
+        .scan-btn { background: #111827; color: white; padding: 16px 32px; border-radius: 30px; font-size: 18px; font-weight: 700; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+
+        /* Scanner Overlay */
+        .scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1500; display: flex; flex-direction: column; }
+        #reader { flex: 1; width: 100%; }
+        .close-scanner { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 20px; z-index: 1600; cursor: pointer; }
+
+        /* Ride Screen */
+        .ride-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1F2937; z-index: 2000; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; text-align: center; color: white; }
+        .timer-val { font-size: 64px; font-weight: 800; margin-top: 20px; }
+        .ride-stats { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; margin: 20px 0; display: flex; justify-content: space-around; }
+
+        /* Receipt Screen */
+        .receipt-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; padding: 30px 24px; display: flex; flex-direction: column; }
+        .receipt-card { background: #F9FAFB; padding: 24px; border-radius: 16px; border: 1px dashed #D1D5DB; margin: 20px 0; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px; color: #4B5563; }
+        .receipt-total { border-top: 2px solid #E5E7EB; padding-top: 12px; font-size: 22px; font-weight: 800; color: #111827; }
     </style>
 </head>
 <body>
     <div class="app">
+        <!-- Splash -->
         <div class="splash" id="splash-screen">🛴 SKOOTY GO</div>
 
-        <!-- 1️⃣ شاشة التسجيل وتأكيد الهوية -->
-        <div class="screen hidden" id="auth-screen">
-            <h2 style="margin-bottom: 16px; color: #111827;">إنشاء الحساب وتوثيقه 🪪</h2>
-            <form onsubmit="processAuthentication(event)">
-                <div class="input-group"><label class="input-label">رقم المحمول</label><input type="tel" class="input-field" id="phone-input" value="01234567890" required></div>
-                <div class="input-group"><label class="input-label">الاسم بالكامل</label><input type="text" class="input-field" id="name-input" value="محمود زيتون" required></div>
-                <div class="input-group"><label class="input-label">البريد الإلكتروني</label><input type="email" class="input-field" id="email-input" value="user@skootygo.com" required></div>
-                <div class="input-group"><label class="input-label">الرقم القومي (14 رقم)</label><input type="text" class="input-field" id="national-id-input" value="29901010000000" maxlength="14" required></div>
-                <button type="submit" class="btn-primary" id="auth-btn">تأكيد البيانات والتفعيل</button>
-            </form>
+        <!-- Auth Screen -->
+        <div class="screen hidden" id="auth-screen" style="padding: 30px 24px; z-index: 100; position: relative; background: white; height: 100%; overflow-y: auto;">
+            <h2 style="margin-bottom: 20px;">أهلاً بك في SKOOTY GO 👋</h2>
+            <p style="color: #6b7280; margin-bottom: 20px;">سجل بياناتك للبدء في الركوب</p>
+            <input type="tel" class="input-field" id="phone-input" placeholder="رقم المحمول (مثال: 01234567890)">
+            <input type="text" class="input-field" id="name-input" placeholder="الاسم ثلاثي">
+            <input type="text" class="input-field" id="national-id-input" placeholder="الرقم القومي (14 رقم)" maxlength="14">
+            <label style="font-size: 12px; color: #6b7280;">صورة البطاقة (وجه)</label>
+            <input type="file" class="input-field" accept="image/*">
+            <label style="font-size: 12px; color: #6b7280;">صورة البطاقة (ظهر)</label>
+            <input type="file" class="input-field" accept="image/*">
+            <button class="btn-primary" onclick="login()">إنشاء الحساب</button>
         </div>
 
-        <!-- 2️⃣ الشاشة الرئيسية وشحن المحفظة ومسح الـ QR -->
-        <div class="screen hidden" style="padding: 0;" id="main-map-screen">
-            <div class="map-header">
-                <div class="brand-name">SKOOTY GO</div>
-                <div>
-                    <span style="font-weight: 700; color: #059669;" id="wallet-balance-label">150.00 ج.م</span>
-                    <button class="btn-charge" onclick="chargeWalletPrompt()">+ شحن</button>
+        <!-- Main Map Screen -->
+        <div class="screen hidden" id="main-screen">
+            <!-- Sidebar -->
+            <div class="menu-overlay hidden" id="menu-overlay" onclick="toggleMenu()"></div>
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3 id="user-name-display">محمود زيتون</h3>
+                    <p style="color: #6b7280; font-size: 14px;" id="user-phone-display">01234567890</p>
+                </div>
+                <div class="menu-item" onclick="chargeWallet()">💳 شحن المحفظة</div>
+                <div class="menu-item" onclick="alert('قريباً: سجل الرحلات')">📜 سجل الرحلات</div>
+                <div class="menu-item" onclick="alert('الدعم الفني: 19XXX')">🎧 الدعم والمساعدة</div>
+            </div>
+
+            <!-- Top UI -->
+            <div class="top-bar">
+                <button class="menu-btn" onclick="toggleMenu()">☰</button>
+                <button class="wallet-btn" onclick="chargeWallet()" id="wallet-btn-txt">150.00 ج.م</button>
+            </div>
+
+            <!-- The Map -->
+            <div id="map"></div>
+
+            <!-- Floating Scan Button -->
+            <div class="scan-btn-container">
+                <button class="scan-btn" onclick="openScanner()">📸 امسح للركوب</button>
+            </div>
+        </div>
+
+        <!-- QR Scanner Screen -->
+        <div class="scanner-overlay hidden" id="scanner-screen">
+            <button class="close-scanner" onclick="closeScanner()">إلغاء ✖</button>
+            <div id="reader"></div>
+            <div style="padding: 20px; text-align: center; color: white;">
+                <h3>وجه الكاميرا نحو كود الإسكوتر</h3>
+                <button class="btn-primary" style="margin-top: 15px;" onclick="simulateScan()">دخول تجريبي (بدون كود)</button>
+            </div>
+        </div>
+
+        <!-- Active Ride Screen -->
+        <div class="ride-screen hidden" id="active-ride-screen">
+            <div>
+                <h3 style="color: #10B981;">الرحلة جارية 🛴</h3>
+                <div class="timer-val" id="live-timer">00:00</div>
+                <div style="font-size: 24px; color: #A7F3D0; margin-top: 10px;" id="live-cost">5.00 ج.م</div>
+                
+                <div class="ride-stats">
+                    <div><span style="display:block; font-size: 12px; color:#9CA3AF;">الإسكوتر</span><b>SKOTY-001</b></div>
+                    <div><span style="display:block; font-size: 12px; color:#9CA3AF;">البطارية</span><b>88% 🔋</b></div>
                 </div>
             </div>
             
-            <div id="qr-scanner-container">
-                <div id="reader"></div>
-                <p style="text-align: center; color: #9CA3AF; font-size: 13px; margin-top: 10px;">امسح كود الـ QR الموجود على الإسكوتر للركوب فوراً</p>
-            </div>
-
-            <div style="padding: 16px; background: white;">
-                <button class="btn-primary" onclick="startRideDemo()">بدء تجريب الرحلة مباشرة ⚡</button>
+            <div>
+                <input type="file" accept="image/*" capture="environment" id="camera-input" class="hidden" onchange="endRide()">
+                <button class="btn-primary btn-danger" onclick="document.getElementById('camera-input').click()">تصوير الإسكوتر وإنهاء الرحلة 🔒</button>
             </div>
         </div>
 
-        <!-- 3️⃣ شاشة الرحلة الحية والعداد المباشر -->
-        <div class="ride-screen hidden" id="active-ride-screen">
-            <div>
-                <div style="background: rgba(16,185,129,0.2); color:#34D399; padding:6px 16px; border-radius:20px; display:inline-block; font-size: 14px;">الرحلة نشطة الان 🛴</div>
-                <div class="timer-val" id="live-timer">00:00</div>
-                <div class="cost-val" id="live-cost">5.00 ج.م</div>
-                <small style="color: #9CA3AF;">(فتح القفل: 5 ج.م + 2.5 ج.م/دقيقة)</small>
+        <!-- Receipt Screen -->
+        <div class="receipt-screen hidden" id="receipt-screen">
+            <h2 style="text-align: center; color: #10B981; margin-bottom: 10px;">تم إنهاء الرحلة بنجاح! 🎉</h2>
+            <div class="receipt-card">
+                <div class="receipt-row"><span>رقم الإسكوتر:</span> <b>SKOTY-001</b></div>
+                <div class="receipt-row"><span>مدة الرحلة:</span> <b id="receipt-time">15 دقيقة</b></div>
+                <div class="receipt-row"><span>رسوم الفتح:</span> <b>5.00 ج.م</b></div>
+                <div class="receipt-row"><span>تكلفة الدقائق:</span> <b id="receipt-mins-cost">37.50 ج.م</b></div>
+                <div class="receipt-row receipt-total"><span>الإجمالي المخصوم:</span> <b id="receipt-total-cost">42.50 ج.م</b></div>
             </div>
-            <button class="btn-primary" style="background: #EF4444;" onclick="lockAndEndRide()">تصوير وإنهاء الرحلة 📸</button>
+            <button class="btn-primary" onclick="backToMap()">العودة للخريطة</button>
         </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    
     <script>
-        const BASE_API = window.location.origin + "/api";
-        let activeTimer = null;
-        let secondsElapsed = 0;
-        let currentRideId = null;
-        let walletBalance = 150.00;
+        let map;
+        let activeTimer;
+        let seconds = 0;
+        let wallet = 150.00;
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.onload = () => {
             setTimeout(() => {
                 document.getElementById('splash-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
-            }, 1000);
-        });
+            }, 1500);
+        };
 
-        async function processAuthentication(e) {
-            e.preventDefault();
+        function login() {
             document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('main-map-screen').classList.remove('hidden');
-            startQRScanner();
+            document.getElementById('main-screen').classList.remove('hidden');
+            initMap();
         }
 
-        function chargeWalletPrompt() {
-            let amount = prompt("أدخل المبلغ المراد شحنه لـ SKOOTY GO (ج.م):", "50");
-            if (amount && !isNaN(amount)) {
-                walletBalance += parseFloat(amount);
-                updateWalletUI();
-                alert(`تم شحن حسابك بـ ${amount} ج.م بنجاح!`);
+        function initMap() {
+            if(!map) {
+                // إحداثيات الإسكندرية
+                map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19,
+                }).addTo(map);
+
+                // أيقونة الإسكوتر
+                let scooterIcon = L.icon({
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2855/2855635.png',
+                    iconSize: [40, 40]
+                });
+
+                // إضافة إسكوترات تجريبية حول المستخدم
+                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("<b>SKOTY-001</b><br>بطارية 88%");
+                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("<b>SKOTY-002</b><br>بطارية 75%");
+            }
+            setTimeout(() => map.invalidateSize(), 200);
+        }
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('menu-overlay').classList.toggle('hidden');
+        }
+
+        function chargeWallet() {
+            let amount = prompt("أدخل المبلغ المراد شحنه (ج.م):", "50");
+            if(amount && !isNaN(amount)) {
+                wallet += parseFloat(amount);
+                document.getElementById('wallet-btn-txt').innerText = `${wallet.toFixed(2)} ج.م`;
+                alert("تم شحن المحفظة بنجاح!");
+                if(document.getElementById('sidebar').classList.contains('open')) toggleMenu();
             }
         }
 
-        function updateWalletUI() {
-            document.getElementById('wallet-balance-label').innerText = `${walletBalance.toFixed(2)} ج.م`;
+        let html5QrcodeScanner;
+        function openScanner() {
+            document.getElementById('scanner-screen').classList.remove('hidden');
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+                (text) => { html5QrcodeScanner.stop(); startRide(); },
+                (err) => {}
+            ).catch(e => console.log("Camera err"));
         }
 
-        async function startRideDemo() {
-            if (walletBalance < 10) {
-                alert("رصيدك الحالي غير كافٍ، يرجى شحن المحفظة أولاً (الحد الأدنى 10 ج.م).");
-                return;
-            }
-            
-            document.getElementById('main-map-screen').classList.add('hidden');
+        function closeScanner() {
+            document.getElementById('scanner-screen').classList.add('hidden');
+            if(html5QrcodeScanner) html5QrcodeScanner.stop().catch(e=>console.log(e));
+        }
+
+        function simulateScan() { closeScanner(); startRide(); }
+
+        function startRide() {
+            if (wallet < 10) { alert("رصيدك لا يكفي. اشحن المحفظة أولاً."); return; }
+            document.getElementById('scanner-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.add('hidden');
             document.getElementById('active-ride-screen').classList.remove('hidden');
             
-            secondsElapsed = 0;
+            seconds = 0;
             activeTimer = setInterval(() => {
-                secondsElapsed++;
-                let mins = Math.floor(secondsElapsed / 60);
-                let secs = (secondsElapsed % 60).toString().padStart(2, '0');
-                document.getElementById('live-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs}`;
-                
-                // حساب الحساب: 5 ج.م فتح القفل + 2.5 ج.م لكل دقيقة
-                let currentCost = 5.0 + (mins * 2.5);
-                document.getElementById('live-cost').innerText = `${currentCost.toFixed(2)} ج.م`;
+                seconds++;
+                let m = Math.floor(seconds/60);
+                let s = seconds % 60;
+                document.getElementById('live-timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                let cost = 5.0 + (m * 2.5);
+                document.getElementById('live-cost').innerText = `${cost.toFixed(2)} ج.م`;
             }, 1000);
         }
 
-        async function lockAndEndRide() {
+        function endRide() {
             clearInterval(activeTimer);
-            let mins = Math.max(1, Math.floor(secondsElapsed / 60));
-            let totalCost = 5.0 + (mins * 2.5);
+            let mins = Math.max(1, Math.floor(seconds/60));
+            let costMins = mins * 2.5;
+            let total = 5.0 + costMins;
             
-            walletBalance = Math.max(0, walletBalance - totalCost);
-            updateWalletUI();
+            wallet = Math.max(0, wallet - total);
+            document.getElementById('wallet-btn-txt').innerText = `${wallet.toFixed(2)} ج.م`;
 
-            alert(`تم إغلاق الإسكوتر بنجاح! 🔒\nمدة الرحلة: ${mins} دقيقة\nالتكلفة الإجمالية: ${totalCost.toFixed(2)} ج.م\nالرصيد المتبقي بمحفظتك: ${walletBalance.toFixed(2)} ج.م`);
+            // ملء بيانات الفاتورة
+            document.getElementById('receipt-time').innerText = `${mins} دقيقة`;
+            document.getElementById('receipt-mins-cost').innerText = `${costMins.toFixed(2)} ج.م`;
+            document.getElementById('receipt-total-cost').innerText = `${total.toFixed(2)} ج.م`;
 
             document.getElementById('active-ride-screen').classList.add('hidden');
-            document.getElementById('main-map-screen').classList.remove('hidden');
-            startQRScanner();
+            document.getElementById('receipt-screen').classList.remove('hidden');
         }
 
-        function startQRScanner() {
-            try {
-                let html5QrcodeScanner = new Html5Qrcode("reader");
-                html5QrcodeScanner.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    () => {
-                        html5QrcodeScanner.stop();
-                        startRideDemo();
-                    },
-                    () => {}
-                ).catch(() => {});
-            } catch(e) {}
+        function backToMap() {
+            document.getElementById('receipt-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            map.invalidateSize();
         }
     </script>
 </body>
