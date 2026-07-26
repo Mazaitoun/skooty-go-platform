@@ -4,264 +4,197 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SKOOTY GO 🛴</title>
-    <!-- استدعاء خريطة Leaflet المجانية -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { background: #F5F5F7; height: 100vh; overflow: hidden; }
-        .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; }
+        body { background: #F5F5F7; overflow: hidden; }
+        .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; overflow: hidden; }
         
         .hidden { display: none !important; }
         
-        /* Splash Screen */
-        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #10B981; display: flex; align-items: center; justify-content: center; z-index: 9999; color: white; font-size: 36px; font-weight: 800; }
+        /* Buttons & Inputs */
+        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
+        .btn-google { background: #4285F4; }
+        .btn-outline { background: white; color: #10B981; border: 2px solid #10B981; }
         
-        /* General UI Elements */
-        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
-        .btn-danger { background: #EF4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
-        .input-field { width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 14px; outline: none; margin-bottom: 12px; transition: 0.3s; }
-        .input-field:focus { border-color: #10B981; }
-
-        /* Sidebar Menu */
-        .menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
-        .sidebar { position: fixed; top: 0; right: -300px; width: 280px; height: 100%; background: white; z-index: 2001; transition: 0.3s ease-in-out; padding: 24px; display: flex; flex-direction: column; }
-        .sidebar.open { right: 0; }
-        .sidebar-header { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        .menu-item { padding: 16px 0; font-size: 18px; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6; cursor: pointer; }
-        .menu-item:hover { color: #10B981; }
-
         /* Map Screen */
-        .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
-        .menu-btn, .wallet-btn { background: white; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 20px; cursor: pointer; border: none; }
-        .wallet-btn { width: auto; padding: 0 16px; font-weight: 700; color: #10B981; border-radius: 25px; }
-        #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; justify-content: space-between; }
+        .wallet-badge { background: white; padding: 10px 16px; font-weight: 700; color: #10B981; border-radius: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
+        #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
+        .scan-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #111827; color: white; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: 800; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1000; cursor: pointer; }
 
-        /* Floating QR Button */
-        .scan-btn-container { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; z-index: 1000; }
-        .scan-btn { background: #111827; color: white; padding: 16px 32px; border-radius: 30px; font-size: 18px; font-weight: 700; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; gap: 10px; }
-
-        /* Scanner Overlay */
-        .scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1500; display: flex; flex-direction: column; }
-        #reader { flex: 1; width: 100%; }
-        .close-scanner { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 20px; z-index: 1600; cursor: pointer; }
-
+        /* Modals & Overlays */
+        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: flex-end; }
+        .modal { background: white; width: 100%; padding: 24px; border-radius: 24px 24px 0 0; }
+        .package-card { border: 2px solid #E5E7EB; padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        .package-card.active { border-color: #10B981; background: #ECFDF5; }
+        
         /* Ride Screen */
-        .ride-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1F2937; z-index: 2000; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; text-align: center; color: white; }
-        .timer-val { font-size: 64px; font-weight: 800; margin-top: 20px; }
-        .ride-stats { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; margin: 20px 0; display: flex; justify-content: space-around; }
-
-        /* Receipt Screen */
-        .receipt-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; padding: 30px 24px; display: flex; flex-direction: column; }
-        .receipt-card { background: #F9FAFB; padding: 24px; border-radius: 16px; border: 1px dashed #D1D5DB; margin: 20px 0; }
-        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px; color: #4B5563; }
-        .receipt-total { border-top: 2px solid #E5E7EB; padding-top: 12px; font-size: 22px; font-weight: 800; color: #111827; }
+        .ride-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1F2937; z-index: 3000; display: flex; flex-direction: column; padding: 40px 24px; text-align: center; color: white; }
+        .timer-val { font-size: 64px; font-weight: 800; margin: 20px 0; }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Splash -->
-        <div class="splash" id="splash-screen">🛴 SKOOTY GO</div>
-
-        <!-- Auth Screen -->
-        <div class="screen hidden" id="auth-screen" style="padding: 30px 24px; z-index: 100; position: relative; background: white; height: 100%; overflow-y: auto;">
-            <h2 style="margin-bottom: 20px;">أهلاً بك في SKOOTY GO 👋</h2>
-            <p style="color: #6b7280; margin-bottom: 20px;">سجل بياناتك للبدء في الركوب</p>
-            <input type="tel" class="input-field" id="phone-input" placeholder="رقم المحمول (مثال: 01234567890)">
-            <input type="text" class="input-field" id="name-input" placeholder="الاسم ثلاثي">
-            <input type="text" class="input-field" id="national-id-input" placeholder="الرقم القومي (14 رقم)" maxlength="14">
-            <label style="font-size: 12px; color: #6b7280;">صورة البطاقة (وجه)</label>
-            <input type="file" class="input-field" accept="image/*">
-            <label style="font-size: 12px; color: #6b7280;">صورة البطاقة (ظهر)</label>
-            <input type="file" class="input-field" accept="image/*">
-            <button class="btn-primary" onclick="login()">إنشاء الحساب</button>
+        <!-- شاشة تسجيل الدخول -->
+        <div class="screen" id="auth-screen" style="padding: 40px 24px; height: 100%;">
+            <h1 style="color: #10B981; text-align: center; font-size: 40px; margin-bottom: 40px;">SKOOTY GO</h1>
+            <button class="btn-primary btn-google" onclick="login()">🌐 تسجيل الدخول بحساب Google</button>
+            <div style="text-align: center; margin: 20px 0; color: #9CA3AF;">أو</div>
+            <button class="btn-primary btn-outline" onclick="login()">تسجيل برقم المحمول</button>
         </div>
 
-        <!-- Main Map Screen -->
+        <!-- الشاشة الرئيسية (الخريطة) -->
         <div class="screen hidden" id="main-screen">
-            <!-- Sidebar -->
-            <div class="menu-overlay hidden" id="menu-overlay" onclick="toggleMenu()"></div>
-            <div class="sidebar" id="sidebar">
-                <div class="sidebar-header">
-                    <h3 id="user-name-display">محمود زيتون</h3>
-                    <p style="color: #6b7280; font-size: 14px;" id="user-phone-display">01234567890</p>
-                </div>
-                <div class="menu-item" onclick="chargeWallet()">💳 شحن المحفظة</div>
-                <div class="menu-item" onclick="alert('قريباً: سجل الرحلات')">📜 سجل الرحلات</div>
-                <div class="menu-item" onclick="alert('الدعم الفني: 19XXX')">🎧 الدعم والمساعدة</div>
-            </div>
-
-            <!-- Top UI -->
             <div class="top-bar">
-                <button class="menu-btn" onclick="toggleMenu()">☰</button>
-                <button class="wallet-btn" onclick="chargeWallet()" id="wallet-btn-txt">150.00 ج.م</button>
+                <div class="wallet-badge" onclick="openTopup()">💳 <span id="wallet-txt">0.00 ج.م</span></div>
             </div>
-
-            <!-- The Map -->
             <div id="map"></div>
+            <button class="scan-btn" onclick="openPackages()">📸 امسح للركوب</button>
+        </div>
 
-            <!-- Floating Scan Button -->
-            <div class="scan-btn-container">
-                <button class="scan-btn" onclick="openScanner()">📸 امسح للركوب</button>
+        <!-- نافذة شحن الرصيد (InstaPay/Wallet) -->
+        <div class="overlay hidden" id="topup-overlay">
+            <div class="modal">
+                <h3>شحن المحفظة 💰</h3>
+                <p style="font-size: 14px; color: #6B7280; margin-bottom: 15px;">برجاء تحويل المبلغ على (InstaPay / فودافون كاش) لرقم: <b>01012345678</b> ثم إدخال المبلغ هنا للمراجعة.</p>
+                <select id="topup-method" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px;">
+                    <option value="instapay">إنستاباي (InstaPay)</option>
+                    <option value="vodafone_cash">فودافون كاش</option>
+                </select>
+                <input type="number" id="topup-amount" placeholder="المبلغ المحول (مثال: 100)" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc;">
+                <button class="btn-primary" onclick="submitTopup()">تم التحويل، إرسال الطلب</button>
+                <button class="btn-primary btn-outline" onclick="document.getElementById('topup-overlay').classList.add('hidden')">إلغاء</button>
             </div>
         </div>
 
-        <!-- QR Scanner Screen -->
-        <div class="scanner-overlay hidden" id="scanner-screen">
-            <button class="close-scanner" onclick="closeScanner()">إلغاء ✖</button>
-            <div id="reader"></div>
-            <div style="padding: 20px; text-align: center; color: white;">
-                <h3>وجه الكاميرا نحو كود الإسكوتر</h3>
-                <button class="btn-primary" style="margin-top: 15px;" onclick="simulateScan()">دخول تجريبي (بدون كود)</button>
-            </div>
-        </div>
-
-        <!-- Active Ride Screen -->
-        <div class="ride-screen hidden" id="active-ride-screen">
-            <div>
-                <h3 style="color: #10B981;">الرحلة جارية 🛴</h3>
-                <div class="timer-val" id="live-timer">00:00</div>
-                <div style="font-size: 24px; color: #A7F3D0; margin-top: 10px;" id="live-cost">5.00 ج.م</div>
+        <!-- نافذة اختيار الباقة -->
+        <div class="overlay hidden" id="packages-overlay">
+            <div class="modal">
+                <h3 style="margin-bottom: 15px;">اختر باقة الرحلة 🛴</h3>
                 
-                <div class="ride-stats">
-                    <div><span style="display:block; font-size: 12px; color:#9CA3AF;">الإسكوتر</span><b>SKOTY-001</b></div>
-                    <div><span style="display:block; font-size: 12px; color:#9CA3AF;">البطارية</span><b>88% 🔋</b></div>
+                <div class="package-card active" onclick="selectPackage('minute')" id="pkg-minute">
+                    <div><b>بالدقيقة</b><br><small>5 ج.م فتح + 2.5 ج.م/د</small></div>
                 </div>
-            </div>
-            
-            <div>
-                <input type="file" accept="image/*" capture="environment" id="camera-input" class="hidden" onchange="endRide()">
-                <button class="btn-primary btn-danger" onclick="document.getElementById('camera-input').click()">تصوير الإسكوتر وإنهاء الرحلة 🔒</button>
+                
+                <div class="package-card" onclick="selectPackage('hourly')" id="pkg-hourly">
+                    <div><b>بالساعة</b><br><small>استخدام لامحدود لمدة 60 دقيقة</small></div>
+                    <b style="color: #10B981;">100 ج.م</b>
+                </div>
+                
+                <div class="package-card" onclick="selectPackage('daily')" id="pkg-daily">
+                    <div><b>باليوم الكامل</b><br><small>استخدام حر لآخر اليوم</small></div>
+                    <b style="color: #10B981;">300 ج.م</b>
+                </div>
+
+                <button class="btn-primary" style="margin-top: 15px;" onclick="startRide()">بدء الرحلة الآن 🚀</button>
+                <button class="btn-primary btn-outline" onclick="document.getElementById('packages-overlay').classList.add('hidden')">إلغاء</button>
             </div>
         </div>
 
-        <!-- Receipt Screen -->
-        <div class="receipt-screen hidden" id="receipt-screen">
-            <h2 style="text-align: center; color: #10B981; margin-bottom: 10px;">تم إنهاء الرحلة بنجاح! 🎉</h2>
-            <div class="receipt-card">
-                <div class="receipt-row"><span>رقم الإسكوتر:</span> <b>SKOTY-001</b></div>
-                <div class="receipt-row"><span>مدة الرحلة:</span> <b id="receipt-time">15 دقيقة</b></div>
-                <div class="receipt-row"><span>رسوم الفتح:</span> <b>5.00 ج.م</b></div>
-                <div class="receipt-row"><span>تكلفة الدقائق:</span> <b id="receipt-mins-cost">37.50 ج.م</b></div>
-                <div class="receipt-row receipt-total"><span>الإجمالي المخصوم:</span> <b id="receipt-total-cost">42.50 ج.م</b></div>
+        <!-- شاشة الرحلة -->
+        <div class="ride-screen hidden" id="active-ride">
+            <div>
+                <h3 style="color: #10B981;" id="ride-pkg-title">رحلة بالدقيقة</h3>
+                <div class="timer-val" id="timer">00:00</div>
+                <div style="font-size: 24px; color: #A7F3D0;" id="ride-cost">جاري الحساب...</div>
             </div>
-            <button class="btn-primary" onclick="backToMap()">العودة للخريطة</button>
+            <button class="btn-primary" style="background: #EF4444;" onclick="endRide()">تصوير وإنهاء الرحلة 🔒</button>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    
     <script>
-        let map;
-        let activeTimer;
-        let seconds = 0;
-        let wallet = 150.00;
-
-        window.onload = () => {
-            setTimeout(() => {
-                document.getElementById('splash-screen').classList.add('hidden');
-                document.getElementById('auth-screen').classList.remove('hidden');
-            }, 1500);
-        };
+        const API = window.location.origin + "/api";
+        let map, balance = 0, currentPkg = 'minute';
+        let timerInterval, seconds = 0;
 
         function login() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
-            initMap();
+            // استدعاء بيانات المستخدم لايف
+            fetch(API + '/auth/login', {method: 'POST'})
+                .then(r => r.json())
+                .then(data => {
+                    balance = data.user.balance;
+                    document.getElementById('wallet-txt').innerText = balance + ' ج.م';
+                    initMap();
+                });
         }
 
         function initMap() {
             if(!map) {
-                // إحداثيات الإسكندرية
                 map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19,
-                }).addTo(map);
-
-                // أيقونة الإسكوتر
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+                
+                // رمز الإسكوتر المخصص
                 let scooterIcon = L.icon({
-                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2855/2855635.png',
-                    iconSize: [40, 40]
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png', // أيقونة إسكوتر واضحة
+                    iconSize: [45, 45],
+                    iconAnchor: [22, 45]
                 });
 
-                // إضافة إسكوترات تجريبية حول المستخدم
-                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map).bindPopup("<b>SKOTY-001</b><br>بطارية 88%");
-                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map).bindPopup("<b>SKOTY-002</b><br>بطارية 75%");
+                L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map);
+                L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map);
             }
-            setTimeout(() => map.invalidateSize(), 200);
+            setTimeout(() => map.invalidateSize(), 300);
         }
 
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('menu-overlay').classList.toggle('hidden');
+        // --- نظام الشحن ---
+        function openTopup() { document.getElementById('topup-overlay').classList.remove('hidden'); }
+        
+        function submitTopup() {
+            let amount = document.getElementById('topup-amount').value;
+            let method = document.getElementById('topup-method').value;
+            if(amount < 10) { alert('أقل مبلغ للشحن 10 ج.م'); return; }
+            
+            fetch(API + '/wallet/request_topup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({amount: amount, method: method})
+            }).then(r => r.json()).then(res => {
+                alert(res.message);
+                document.getElementById('topup-overlay').classList.add('hidden');
+            });
         }
 
-        function chargeWallet() {
-            let amount = prompt("أدخل المبلغ المراد شحنه (ج.م):", "50");
-            if(amount && !isNaN(amount)) {
-                wallet += parseFloat(amount);
-                document.getElementById('wallet-btn-txt').innerText = `${wallet.toFixed(2)} ج.م`;
-                alert("تم شحن المحفظة بنجاح!");
-                if(document.getElementById('sidebar').classList.contains('open')) toggleMenu();
-            }
+        // --- نظام الباقات والرحلة ---
+        function openPackages() { document.getElementById('packages-overlay').classList.remove('hidden'); }
+        
+        function selectPackage(pkg) {
+            currentPkg = pkg;
+            document.querySelectorAll('.package-card').forEach(el => el.classList.remove('active'));
+            document.getElementById('pkg-' + pkg).classList.add('active');
         }
-
-        let html5QrcodeScanner;
-        function openScanner() {
-            document.getElementById('scanner-screen').classList.remove('hidden');
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-                (text) => { html5QrcodeScanner.stop(); startRide(); },
-                (err) => {}
-            ).catch(e => console.log("Camera err"));
-        }
-
-        function closeScanner() {
-            document.getElementById('scanner-screen').classList.add('hidden');
-            if(html5QrcodeScanner) html5QrcodeScanner.stop().catch(e=>console.log(e));
-        }
-
-        function simulateScan() { closeScanner(); startRide(); }
 
         function startRide() {
-            if (wallet < 10) { alert("رصيدك لا يكفي. اشحن المحفظة أولاً."); return; }
-            document.getElementById('scanner-screen').classList.add('hidden');
+            if(currentPkg === 'daily' && balance < 300) { alert('رصيدك لا يكفي לבاقة اليوم. اشحن المحفظة.'); return; }
+            if(currentPkg === 'hourly' && balance < 100) { alert('رصيدك لا يكفي לבاقة الساعة.'); return; }
+            
+            document.getElementById('packages-overlay').classList.add('hidden');
             document.getElementById('main-screen').classList.add('hidden');
-            document.getElementById('active-ride-screen').classList.remove('hidden');
+            document.getElementById('active-ride').classList.remove('hidden');
+            
+            let titles = { 'minute': 'رحلة بالدقيقة', 'hourly': 'باقة الساعة', 'daily': 'باقة اليوم الكامل' };
+            document.getElementById('ride-pkg-title').innerText = titles[currentPkg];
             
             seconds = 0;
-            activeTimer = setInterval(() => {
+            timerInterval = setInterval(() => {
                 seconds++;
-                let m = Math.floor(seconds/60);
-                let s = seconds % 60;
-                document.getElementById('live-timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-                let cost = 5.0 + (m * 2.5);
-                document.getElementById('live-cost').innerText = `${cost.toFixed(2)} ج.م`;
+                let m = Math.floor(seconds/60), s = seconds%60;
+                document.getElementById('timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                
+                if(currentPkg === 'minute') document.getElementById('ride-cost').innerText = (5 + (m * 2.5)).toFixed(2) + ' ج.م';
+                else if(currentPkg === 'hourly') document.getElementById('ride-cost').innerText = '100.00 ج.م (مدفوعة)';
+                else document.getElementById('ride-cost').innerText = '300.00 ج.م (مدفوعة)';
             }, 1000);
         }
 
         function endRide() {
-            clearInterval(activeTimer);
-            let mins = Math.max(1, Math.floor(seconds/60));
-            let costMins = mins * 2.5;
-            let total = 5.0 + costMins;
-            
-            wallet = Math.max(0, wallet - total);
-            document.getElementById('wallet-btn-txt').innerText = `${wallet.toFixed(2)} ج.م`;
-
-            // ملء بيانات الفاتورة
-            document.getElementById('receipt-time').innerText = `${mins} دقيقة`;
-            document.getElementById('receipt-mins-cost').innerText = `${costMins.toFixed(2)} ج.م`;
-            document.getElementById('receipt-total-cost').innerText = `${total.toFixed(2)} ج.م`;
-
-            document.getElementById('active-ride-screen').classList.add('hidden');
-            document.getElementById('receipt-screen').classList.remove('hidden');
-        }
-
-        function backToMap() {
-            document.getElementById('receipt-screen').classList.add('hidden');
+            clearInterval(timerInterval);
+            alert("تم إنهاء الرحلة بنجاح!");
+            document.getElementById('active-ride').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
             map.invalidateSize();
         }
