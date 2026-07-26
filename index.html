@@ -75,7 +75,6 @@
         let map = null;
         let currentUser = null;
 
-        // التبديل بين اللوجين والتسجيل
         function switchTab(tab) {
             document.getElementById('auth-msg').innerText = '';
             if (tab === 'login') {
@@ -91,7 +90,6 @@
             }
         }
 
-        // إرسال طلب تسجيل الدخول
         async function submitLogin() {
             let phone = document.getElementById('login-phone').value;
             let pass = document.getElementById('login-pass').value;
@@ -121,7 +119,6 @@
             }
         }
 
-        // إرسال طلب حساب جديد
         async function submitRegister() {
             let name = document.getElementById('reg-name').value;
             let phone = document.getElementById('reg-phone').value;
@@ -152,7 +149,6 @@
             }
         }
 
-        // دخول التطبيق بعد نجاح التسجيل/الدخول
         function enterApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
