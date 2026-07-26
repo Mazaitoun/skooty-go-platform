@@ -6,205 +6,170 @@
     <title>SKOOTY GO 🛴</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { background: #F5F5F7; overflow: hidden; }
         .app { max-width: 430px; margin: 0 auto; height: 100vh; position: relative; background: white; overflow: hidden; }
-        
         .hidden { display: none !important; }
         
-        /* Buttons */
-        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
-        .btn-outline { background: white; color: #10B981; border: 2px solid #10B981; }
+        /* Inputs & Buttons */
+        .input-field { width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 12px; font-size: 15px; outline: none; margin-bottom: 12px; transition: border 0.3s; }
+        .input-field:focus { border-color: #10B981; }
+        .btn-primary { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.3s; }
+        .btn-primary:hover { background: #059669; }
         
-        /* Map Screen */
+        /* Auth Tabs */
+        .auth-tabs { display: flex; background: #F3F4F6; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; cursor: pointer; color: #6B7280; transition: 0.3s; }
+        .tab-btn.active { background: #10B981; color: white; }
+
+        /* Map UI */
         .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; justify-content: space-between; }
         .wallet-badge { background: white; padding: 10px 16px; font-weight: 700; color: #10B981; border-radius: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
         #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         .scan-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #111827; color: white; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: 800; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1000; cursor: pointer; }
-
-        /* Modals */
-        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: flex-end; }
-        .modal { background: white; width: 100%; padding: 24px; border-radius: 24px 24px 0 0; }
-        .package-card { border: 2px solid #E5E7EB; padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
-        .package-card.active { border-color: #10B981; background: #ECFDF5; }
-        
-        /* Ride Screen */
-        .ride-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1F2937; z-index: 3000; display: flex; flex-direction: column; padding: 40px 24px; text-align: center; color: white; }
-        .timer-val { font-size: 64px; font-weight: 800; margin: 20px 0; }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- شاشة تسجيل الدخول -->
+        <!-- شاشة تسجيل الدخول / إنشاء الحساب -->
         <div class="screen" id="auth-screen" style="padding: 40px 24px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
-            <h1 style="color: #10B981; text-align: center; font-size: 45px; margin-bottom: 40px;">SKOOTY GO</h1>
-            <p style="text-align: center; color: #6B7280; margin-bottom: 30px;">أهلاً بك في منصة التنقل الذكي</p>
-            <button class="btn-primary" onclick="proceedToApp()">تسجيل الدخول والبدء 🚀</button>
+            <h1 style="color: #10B981; text-align: center; font-size: 45px; margin-bottom: 20px;">SKOOTY GO</h1>
+            
+            <div class="auth-tabs">
+                <div class="tab-btn active" id="tab-login" onclick="switchTab('login')">تسجيل الدخول</div>
+                <div class="tab-btn" id="tab-register" onclick="switchTab('register')">حساب جديد</div>
+            </div>
+
+            <!-- نموذج تسجيل الدخول -->
+            <div id="form-login">
+                <input type="tel" id="login-phone" class="input-field" placeholder="رقم المحمول" maxlength="11">
+                <input type="password" id="login-pass" class="input-field" placeholder="كلمة المرور">
+                <button class="btn-primary" onclick="submitLogin()" id="btn-login">دخول 🚀</button>
+            </div>
+
+            <!-- نموذج إنشاء حساب -->
+            <div id="form-register" class="hidden">
+                <input type="text" id="reg-name" class="input-field" placeholder="الاسم بالكامل">
+                <input type="tel" id="reg-phone" class="input-field" placeholder="رقم المحمول" maxlength="11">
+                <input type="password" id="reg-pass" class="input-field" placeholder="كلمة المرور">
+                <button class="btn-primary" onclick="submitRegister()" id="btn-register">إنشاء الحساب ✅</button>
+            </div>
+            
+            <p id="auth-msg" style="text-align: center; margin-top: 15px; color: #EF4444; font-weight: 600;"></p>
         </div>
 
         <!-- الشاشة الرئيسية (الخريطة) -->
         <div class="screen hidden" id="main-screen">
             <div class="top-bar">
-                <div class="wallet-badge" onclick="openTopup()">💳 <span id="wallet-txt">150.00 ج.م</span></div>
+                <div class="wallet-badge" onclick="alert('شحن المحفظة قريباً')">💳 <span id="wallet-txt">0.00 ج.م</span></div>
             </div>
             <div id="map"></div>
-            <button class="scan-btn" onclick="openPackages()">📸 امسح للركوب</button>
-        </div>
-
-        <!-- نافذة شحن الرصيد -->
-        <div class="overlay hidden" id="topup-overlay">
-            <div class="modal">
-                <h3>شحن المحفظة 💰</h3>
-                <select id="topup-method" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px;">
-                    <option value="instapay">إنستاباي (InstaPay)</option>
-                    <option value="vodafone_cash">فودافون كاش</option>
-                </select>
-                <input type="number" id="topup-amount" placeholder="المبلغ المحول" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc;">
-                <button class="btn-primary" onclick="submitTopup()">إرسال الطلب للإدارة</button>
-                <button class="btn-primary btn-outline" onclick="document.getElementById('topup-overlay').classList.add('hidden')">إلغاء</button>
-            </div>
-        </div>
-
-        <!-- نافذة اختيار الباقة -->
-        <div class="overlay hidden" id="packages-overlay">
-            <div class="modal">
-                <h3 style="margin-bottom: 15px;">اختر باقة الرحلة 🛴</h3>
-                
-                <div class="package-card active" onclick="selectPackage('minute')" id="pkg-minute">
-                    <div><b>بالدقيقة</b><br><small>5 ج.م فتح + 2.5 ج.م/د</small></div>
-                </div>
-                
-                <div class="package-card" onclick="selectPackage('hourly')" id="pkg-hourly">
-                    <div><b>بالساعة</b><br><small>استخدام مفتوح لـ 60 دقيقة</small></div>
-                    <b style="color: #10B981;">100 ج.م</b>
-                </div>
-                
-                <div class="package-card" onclick="selectPackage('daily')" id="pkg-daily">
-                    <div><b>باليوم الكامل</b><br><small>استخدام حر لآخر اليوم</small></div>
-                    <b style="color: #10B981;">300 ج.م</b>
-                </div>
-
-                <button class="btn-primary" style="margin-top: 15px;" onclick="startRide()">بدء الرحلة 🚀</button>
-                <button class="btn-primary btn-outline" onclick="document.getElementById('packages-overlay').classList.add('hidden')">إلغاء</button>
-            </div>
-        </div>
-
-        <!-- شاشة الرحلة -->
-        <div class="ride-screen hidden" id="active-ride">
-            <div>
-                <h3 style="color: #10B981;" id="ride-pkg-title">رحلة بالدقيقة</h3>
-                <div class="timer-val" id="timer">00:00</div>
-                <div style="font-size: 24px; color: #A7F3D0;" id="ride-cost">0.00 ج.م</div>
-            </div>
-            <button class="btn-primary" style="background: #EF4444;" onclick="endRide()">إنهاء الرحلة 🔒</button>
+            <button class="scan-btn" onclick="alert('سكانر الإسكوتر')">📸 امسح للركوب</button>
         </div>
     </div>
 
-    <!-- استدعاء خريطة Leaflet بأمان -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const API = window.location.origin + "/api";
         let map = null;
-        let balance = 150.00;
-        let currentPkg = 'minute';
-        let timerInterval;
-        let seconds = 0;
+        let currentUser = null;
 
-        function proceedToApp() {
+        // التبديل بين اللوجين والتسجيل
+        function switchTab(tab) {
+            document.getElementById('auth-msg').innerText = '';
+            if (tab === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-register').classList.remove('active');
+                document.getElementById('form-login').classList.remove('hidden');
+                document.getElementById('form-register').classList.add('hidden');
+            } else {
+                document.getElementById('tab-register').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('form-register').classList.remove('hidden');
+                document.getElementById('form-login').classList.add('hidden');
+            }
+        }
+
+        // إرسال طلب تسجيل الدخول
+        async function submitLogin() {
+            let phone = document.getElementById('login-phone').value;
+            let pass = document.getElementById('login-pass').value;
+            let msg = document.getElementById('auth-msg');
+            let btn = document.getElementById('btn-login');
+
+            if (!phone || !pass) { msg.innerText = "برجاء إدخال رقم المحمول وكلمة المرور"; return; }
+
+            btn.innerText = "جاري الدخول...";
+            try {
+                let res = await fetch(API + '/auth/login', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ phone: phone, password: pass })
+                });
+                let data = await res.json();
+                
+                if (res.ok) {
+                    currentUser = data.user;
+                    enterApp();
+                } else {
+                    msg.innerText = data.error || "خطأ في تسجيل الدخول";
+                    btn.innerText = "دخول 🚀";
+                }
+            } catch (e) {
+                msg.innerText = "خطأ في الاتصال بالخادم";
+                btn.innerText = "دخول 🚀";
+            }
+        }
+
+        // إرسال طلب حساب جديد
+        async function submitRegister() {
+            let name = document.getElementById('reg-name').value;
+            let phone = document.getElementById('reg-phone').value;
+            let pass = document.getElementById('reg-pass').value;
+            let msg = document.getElementById('auth-msg');
+            let btn = document.getElementById('btn-register');
+
+            if (!name || !phone || !pass) { msg.innerText = "برجاء استكمال جميع البيانات"; return; }
+
+            btn.innerText = "جاري الإنشاء...";
+            try {
+                let res = await fetch(API + '/auth/register', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name: name, phone: phone, password: pass })
+                });
+                let data = await res.json();
+                
+                if (res.ok) {
+                    currentUser = data.user;
+                    enterApp();
+                } else {
+                    msg.innerText = data.error || "خطأ أثناء إنشاء الحساب";
+                    btn.innerText = "إنشاء الحساب ✅";
+                }
+            } catch (e) {
+                msg.innerText = "خطأ في الاتصال بالخادم";
+                btn.innerText = "إنشاء الحساب ✅";
+            }
+        }
+
+        // دخول التطبيق بعد نجاح التسجيل/الدخول
+        function enterApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
+            document.getElementById('wallet-txt').innerText = currentUser.balance + ' ج.م';
             
-            // تهيئة الخريطة فوراً بعد ظهور الشاشة
-            setTimeout(() => {
-                initMap();
-            }, 100);
-
-            // جلب الرصيد في الخلفية بدون تعطيل الشاشة
-            fetch(API + '/auth/login', { method: 'POST' })
-                .then(r => r.json())
-                .then(data => {
-                    if(data && data.user) {
-                        balance = data.user.balance;
-                        document.getElementById('wallet-txt').innerText = balance + ' ج.م';
-                    }
-                }).catch(err => console.log("Offline mode active"));
+            setTimeout(() => { initMap(); }, 100);
         }
 
         function initMap() {
             if(!map) {
                 map = L.map('map', {zoomControl: false}).setView([31.2001, 29.9187], 15);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
-                
-                let scooterIcon = L.icon({
-                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png',
-                    iconSize: [45, 45],
-                    iconAnchor: [22, 45]
-                });
-
+                let scooterIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3752/3752766.png', iconSize: [45, 45], iconAnchor: [22, 45] });
                 L.marker([31.2001, 29.9187], {icon: scooterIcon}).addTo(map);
                 L.marker([31.2050, 29.9200], {icon: scooterIcon}).addTo(map);
             }
             map.invalidateSize();
-        }
-
-        function openTopup() { document.getElementById('topup-overlay').classList.remove('hidden'); }
-        
-        function submitTopup() {
-            let amount = document.getElementById('topup-amount').value;
-            let method = document.getElementById('topup-method').value;
-            if(!amount || amount < 10) { alert('أقل مبلغ للشحن 10 ج.م'); return; }
-            
-            fetch(API + '/wallet/request_topup', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({amount: amount, method: method})
-            }).then(r => r.json()).then(res => {
-                alert(res.message);
-                document.getElementById('topup-overlay').classList.add('hidden');
-            }).catch(e => {
-                alert("تم إرسال الطلب بنجاح");
-                document.getElementById('topup-overlay').classList.add('hidden');
-            });
-        }
-
-        function openPackages() { document.getElementById('packages-overlay').classList.remove('hidden'); }
-        
-        function selectPackage(pkg) {
-            currentPkg = pkg;
-            document.querySelectorAll('.package-card').forEach(el => el.classList.remove('active'));
-            document.getElementById('pkg-' + pkg).classList.add('active');
-        }
-
-        function startRide() {
-            if(currentPkg === 'daily' && balance < 300) { alert('رصيدك لا يكفي. اشحن المحفظة.'); return; }
-            if(currentPkg === 'hourly' && balance < 100) { alert('رصيدك لا يكفي.'); return; }
-            
-            document.getElementById('packages-overlay').classList.add('hidden');
-            document.getElementById('main-screen').classList.add('hidden');
-            document.getElementById('active-ride').classList.remove('hidden');
-            
-            let titles = { 'minute': 'رحلة بالدقيقة', 'hourly': 'باقة الساعة', 'daily': 'باقة اليوم الكامل' };
-            document.getElementById('ride-pkg-title').innerText = titles[currentPkg];
-            
-            seconds = 0;
-            timerInterval = setInterval(() => {
-                seconds++;
-                let m = Math.floor(seconds/60), s = seconds%60;
-                document.getElementById('timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-                
-                if(currentPkg === 'minute') document.getElementById('ride-cost').innerText = (5 + (m * 2.5)).toFixed(2) + ' ج.م';
-                else if(currentPkg === 'hourly') document.getElementById('ride-cost').innerText = '100.00 ج.م (مدفوعة)';
-                else document.getElementById('ride-cost').innerText = '300.00 ج.م (مدفوعة)';
-            }, 1000);
-        }
-
-        function endRide() {
-            clearInterval(timerInterval);
-            alert("تم إنهاء الرحلة بنجاح!");
-            document.getElementById('active-ride').classList.add('hidden');
-            document.getElementById('main-screen').classList.remove('hidden');
-            setTimeout(() => { if(map) map.invalidateSize(); }, 200);
         }
     </script>
 </body>
