@@ -24,7 +24,7 @@ class User(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=False)
     full_name = db.Column(db.String(100))
     password_hash = db.Column(db.String(255), nullable=False)
-    wallet_balance = db.Column(db.Float, default=0.0)
+    wallet_balance = db.Column(db.Float, default=50.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class TopupRequest(db.Model):
@@ -58,7 +58,7 @@ def register():
             return jsonify({"error": "رقم المحمول مسجل مسبقاً!"}), 400
 
         hashed_password = generate_password_hash(password)
-        new_user = User(phone=phone, full_name=full_name, password_hash=hashed_password, wallet_balance=50.0) # هدية ترحيبية 50 جنيه
+        new_user = User(phone=phone, full_name=full_name, password_hash=hashed_password, wallet_balance=50.0)
         db.session.add(new_user)
         db.session.commit()
 
@@ -87,33 +87,108 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# جلب رصيد المستخدم المحدث
+@app.route('/api/user/balance/<int:user_id>', methods=['GET'])
+def get_balance(user_id):
+    user = User.query.get(user_id)
+    if user:
+        return jsonify({"balance": user.wallet_balance})
+    return jsonify({"error": "المستخدم غير موجود"}), 404
+
 # طلب شحن المحفظة
 @app.route('/api/wallet/request_topup', methods=['POST'])
 def request_topup():
     try:
         data = request.json
         req = TopupRequest(
-            user_id=data.get('user_id'),
+            user_id=int(data.get('user_id')),
             amount=float(data.get('amount')),
             method=data.get('method')
         )
         db.session.add(req)
         db.session.commit()
-        return jsonify({"message": "تم إرسال طلب الشحن بنجاح! سيتم المراجعة وإضافة الرصيد."})
+        return jsonify({"message": "تم إرسال طلب الشحن بنجاح!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# لوحة تحكم الإدارة لمراجعة الشحن وقبوله
+# لوحة تحكم الإدارة الاحترافية (Admin Dashboard)
 @app.route('/admin')
 def admin_panel():
     try:
-        topups = TopupRequest.query.filter_by(status='pending').all()
-        html = "<h2 style='text-align:center; font-family:Tahoma;'>لوحة تحكم SKOOTY GO - طلبات الشحن</h2>"
-        html += "<table border='1' width='100%' style='text-align:center; font-family:Tahoma; border-collapse:collapse; padding:10px;'>"
-        html += "<tr><th>رقم المستخدم</th><th>المبلغ</th><th>الطريقة</th><th>إجراء</th></tr>"
-        for t in topups:
-            html += f"<tr><td>{t.user_id}</td><td>{t.amount} ج.م</td><td>{t.method}</td><td><a href='/admin/approve?id={t.id}' style='background:green; color:white; padding:5px 15px; text-decoration:none; border-radius:5px;'>موافقة وشحن</a></td></tr>"
-        html += "</table>"
+        pending_topups = db.session.query(TopupRequest, User).join(User, TopupRequest.user_id == User.id).filter(TopupRequest.status == 'pending').all()
+        total_users = User.query.count()
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <title>لوحة تحكم SKOOTY GO الاحترافية</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+                * {{ font-family: 'Cairo', sans-serif; box-sizing: border-box; }}
+                body {{ background: #0F172A; color: #F8FAFC; margin: 0; padding: 30px; }}
+                .container {{ max-width: 1000px; margin: 0 auto; }}
+                h1 {{ color: #10B981; text-align: center; margin-bottom: 30px; }}
+                .stats {{ display: flex; gap: 20px; margin-bottom: 30px; }}
+                .stat-card {{ background: #1E293B; padding: 20px; border-radius: 12px; flex: 1; text-align: center; border: 1px solid #334155; }}
+                .stat-card h3 {{ color: #94A3B8; margin: 0 0 10px 0; font-size: 16px; }}
+                .stat-card p {{ color: #10B981; font-size: 28px; font-weight: bold; margin: 0; }}
+                table {{ width: 100%; border-collapse: collapse; background: #1E293B; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }}
+                th, td {{ padding: 15px; text-align: center; border-bottom: 1px solid #334155; }}
+                th {{ background: #334155; color: #F8FAFC; }}
+                tr:hover {{ background: #262F40; }}
+                .btn-approve {{ background: #10B981; color: white; padding: 8px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; transition: 0.2s; }}
+                .btn-approve:hover {{ background: #059669; }}
+                .empty {{ text-align: center; padding: 40px; color: #94A3B8; font-size: 18px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>SKOOTY GO - لوحة الإدارة الرئيسية 🚀</h1>
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>إجمالي المستخدمين</h3>
+                        <p>{total_users}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>طلبات الشحن المعلقة</h3>
+                        <p>{len(pending_topups)}</p>
+                    </div>
+                </div>
+                <h2 style="margin-bottom: 15px;">طلبات الشحن بانتظار الموافقة</h2>
+                <table>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>اسم العميل</th>
+                        <th>رقم التليفون</th>
+                        <th>المبلغ</th>
+                        <th>طريقة الدفع</th>
+                        <th>الإجراء</th>
+                    </tr>
+        """
+        
+        if not pending_topups:
+            html += "<tr><td colspan='6' class='empty'>لا توجد طلبات شحن معلقة حالياً ✅</td></tr>"
+        else:
+            for t, u in pending_topups:
+                html += f"""
+                    <tr>
+                        #{t.id}
+                        <td>{u.full_name}</td>
+                        <td>{u.phone}</td>
+                        <td style="color: #10B981; font-weight: bold;">{t.amount} ج.م</td>
+                        <td>{t.method}</td>
+                        <td><a href="/admin/approve?id={t.id}" class="btn-approve">موافقة وشحن الرصيد ⚡</a></td>
+                    </tr>
+                """
+        
+        html += """
+                </table>
+            </div>
+        </body>
+        </html>
+        """
         return html
     except Exception as e:
         return f"خطأ في لوحة التحكم: {e}"
@@ -129,7 +204,12 @@ def approve_topup():
             if user:
                 user.wallet_balance += topup.amount
             db.session.commit()
-            return "<h3 style='color:green; text-align:center; font-family:Tahoma;'>تمت الموافقة وإضافة الرصيد لحساب العميل بنجاح! <a href='/admin'>العودة</a></h3>"
+            return """
+            <body style="background:#0F172A; color:white; font-family:Tahoma; text-align:center; padding-top:50px;">
+                <h2 style="color:#10B981;">تمت الموافقة بنجاح وإضافة الرصيد لحساب العميل! 🎉</h2>
+                <br><a href="/admin" style="background:#10B981; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">العودة للوحة التحكم</a>
+            </body>
+            """
         return "الطلب غير موجود أو تم معالجته مسبقاً."
     except Exception as e:
         return f"خطأ: {e}"
